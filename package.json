@@ -1,0 +1,49 @@
+{
+  "name": "web-kpi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hệ thống quản lý và đánh giá kết quả thực hiện nhiệm vụ KPI/OKR — Ban Tổ chức Tỉnh ủy",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "postinstall": "npm run build -w @kpi/shared",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w @kpi/api\" \"npm run dev -w @kpi/web\"",
+    "dev:api": "npm run dev -w @kpi/api",
+    "dev:web": "npm run dev -w @kpi/web",
+    "build": "npm run build -w @kpi/shared && npm run build -w @kpi/api && npm run build -w @kpi/web",
+    "typecheck": "npm run typecheck -w @kpi/shared && npm run typecheck -w @kpi/api && npm run typecheck -w @kpi/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test -w @kpi/shared && npm run test -w @kpi/api && npm run test -w @kpi/web",
+    "db:up": "docker compose up -d --wait db",
+    "db:stop": "docker compose stop db",
+    "db:logs": "docker compose logs -f db",
+    "db:generate": "npm run db:generate -w @kpi/api",
+    "db:migrate": "npm run db:migrate -w @kpi/api",
+    "db:migrate:test": "npm run db:migrate:test -w @kpi/api",
+    "db:seed": "npm run db:seed -w @kpi/api",
+    "db:check": "npm run db:check -w @kpi/api",
+    "db:studio": "npm run db:studio -w @kpi/api",
+    "db:backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db-backup.ps1",
+    "db:restore": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db-restore.ps1",
+    "create-admin": "npm run create-admin -w @kpi/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1"
+  }
+}

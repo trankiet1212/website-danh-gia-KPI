@@ -1,0 +1,498 @@
+{
+  "_comment": "Danh mục sản phẩm/công việc chuẩn của Ban Tổ chức Tỉnh ủy — trích file \"Danh mục công việc của BTCTU\" (sheet BTCTU 21.7, ghi chú \"Ví dụ danh mục sản phẩm\"). Hệ số quy đổi = điểm / điểm chuẩn (90). Trạng thái phê duyệt chưa được xác nhận (docs/09).",
+  "standardPoints": 90,
+  "groups": {
+    "A": "NHÓM CÔNG VIỆC THEO VTVL LÃNH ĐẠO, QUẢN LÝ CẤP PHÒNG",
+    "B": "NHÓM CÔNG VIỆC THEO VTVL CHUYÊN MÔN DÙNG CHUNG (GỒM: VĂN THƯ; HÀNH CHÍNH; TÀI CHÍNH NỘI BỘ)",
+    "C": "NHÓM CÔNG VIỆC THEO VTVL CHUYÊN MÔN, NGHIỆP VỤ",
+    "D": "NHÓM CÔNG VIỆC KHÁC"
+  },
+  "items": [
+    {
+      "code": "A.001",
+      "groupCode": "A",
+      "name": "Nghiên cứu các văn bản chuyên môn, nghiệp vụ",
+      "product": "Văn bản",
+      "complexityLevel": 1,
+      "maxHoursText": "Thực tế",
+      "points": 10.0,
+      "note": null
+    },
+    {
+      "code": "A.002",
+      "groupCode": "A",
+      "name": "Nghiên cứu chuyển văn bản và phân công nhiệm vụ cán bộ trực thuộc (kể cả đơn thư và văn bản Mật)",
+      "product": "Văn bản",
+      "complexityLevel": 1,
+      "maxHoursText": "0.2",
+      "points": 10.0,
+      "note": "Bao gồm triển khai nhiệm vụ cấp trên và chủ động tham mưu theo chức năng, nhiệm vụ"
+    },
+    {
+      "code": "A.003",
+      "groupCode": "A",
+      "name": "Lãnh đạo thẩm định văn bản Ban Tổ chức Tỉnh ủy ban hành với mức độ, tính chất thường xuyên",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "4",
+      "points": 120.0,
+      "note": "Công văn xin ý kiến, thẩm định, …"
+    },
+    {
+      "code": "A.004",
+      "groupCode": "A",
+      "name": "Lãnh đạo thẩm định văn bản trình Thường trực, Ban Thường vụ Tỉnh ủy ban hành với mức độ, tính chất thường xuyên",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "5",
+      "points": 150.0,
+      "note": null
+    },
+    {
+      "code": "A.005",
+      "groupCode": "A",
+      "name": "Lãnh đạo thẩm định văn bản Ban Tổ chức Tỉnh ủy ban hành với mức độ, tính chất phức tạp",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "7",
+      "points": 210.0,
+      "note": null
+    },
+    {
+      "code": "A.006",
+      "groupCode": "A",
+      "name": "Lãnh đạo thẩm định văn bản trình Thường trực, Ban Thường vụ Tỉnh ủy ban hành với mức độ, tính chất phức tạp",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "7",
+      "points": 210.0,
+      "note": null
+    },
+    {
+      "code": "B.001",
+      "groupCode": "B",
+      "name": "Tiếp nhận văn bản đến trên Phần mềm Hệ thống điều hành tác nghiệp; Đóng dấu các loại văn bản, chứng từ, hợp đồng…;",
+      "product": "Văn bản; Dấu",
+      "complexityLevel": 1,
+      "maxHoursText": "0.03",
+      "points": 5.0,
+      "note": null
+    },
+    {
+      "code": "B.002",
+      "groupCode": "B",
+      "name": "Phát hành văn bản đi trên Phần mềm Hệ thống điều hành tác nghiệp hoặc Văn bản Giấy (kể cả văn bản Mật); Vào sổ theo dõi thời gian nghỉ phép của cán bộ, công chức, cán bộ công an biệt phái và người lao động; Mua phôi Quyết định, huy hiệu cài áo,…; Cấp Giấy đi đường, lệnh điều xe khi có lịch công tác,…;",
+      "product": "Văn bản; Lượt; Biểu mẫu; Phiếu",
+      "complexityLevel": 1,
+      "maxHoursText": "0.2",
+      "points": 10.0,
+      "note": null
+    },
+    {
+      "code": "B.003",
+      "groupCode": "B",
+      "name": "Trình văn bản trực tiếp đến Lãnh đạo; Gửi văn bản giấy, thư...đến các cơ quan, tổ chức, đơn vị, địa phương; gửi trực tiếp văn bản đến các phòng, ban, cơ quan, đơn vị; Mua sắm văn phòng phẩm, mực in, sạc mực và đồ dùng thiết yếu phục vụ các hoạt động chung của cơ quan; Cấp phát Văn phòng phẩm theo đề nghị; Biên bản họp phòng; Cấp phát khen thưởng theo danh sách được duyệt; Rà soát, tổng hợp theo dõi nhiệm vụ do cấp trên giao; Xuất sổ văn bản đi, đến; In giấy khen (50 trường hợp); Thu, chi tiền mặt",
+      "product": "Lượt; Biên bản; Giấy khen",
+      "complexityLevel": 1,
+      "maxHoursText": "0.5",
+      "points": 20.0,
+      "note": "In giấy khen cuối năm; đột xuất; in theo danh sách phê duyệt của Tỉnh ủy"
+    },
+    {
+      "code": "B.004",
+      "groupCode": "B",
+      "name": "Chuẩn bị tài liệu, hậu cần phục vụ hội nghị, họp cơ quan,…",
+      "product": "Cuộc",
+      "complexityLevel": 1,
+      "maxHoursText": "1",
+      "points": 30.0,
+      "note": null
+    },
+    {
+      "code": "B.005",
+      "groupCode": "B",
+      "name": "In các loại sổ và đóng quyển: Sổ đăng ký văn bản mật đến; Sổ chuyển giao văn bản mật đi; Sổ gửi văn bản mật đi bưu điện; Sổ chuyển giao văn bản đến; Sổ Quyết định; Sổ đăng ký và chuyển giao đơn, thư; Sổ quản lý sao chụp Bí mật Nhà nước; In và đóng quyển sổ đăng ký văn bản đến và đi trên hệ thống Phần mềm Quản lý văn bản; Photo tài liệu phục vụ Hội nghị Ban Thường vụ Tỉnh ùy, Ban Chấp hành Đảng bộ tỉnh",
+      "product": "Lượt; Tài liệu",
+      "complexityLevel": 1,
+      "maxHoursText": "4",
+      "points": 50.0,
+      "note": null
+    },
+    {
+      "code": "B.006",
+      "groupCode": "B",
+      "name": "Nghiên cứu các văn bản chuyên môn, nghiệp vụ (công chức, viên chức không giữ chức vụ lãnh đạo, quản lý); Tiếp nhận văn bản đến bằng giấy (kể cả văn bản Mật), scan đưa lên Phần mềm Hệ thống điều hành tác nghiệp (văn bản đến Mật vào sổ theo dõi); Sao lưu văn bản mật; Tạo Danh mục, lập hồ sơ điện tử trên Phần mềm Quản lý văn bản; Tạo lập hồ sơ công việc, lưu trữ hồ sơ giấy; Nộp lưu tài liệu vào Lưu trữ lịch sử; Hoàn thiện chứng từ, đề nghị thanh toán các khoản mua sắm, các khoản liên quan đến công tác chính sách cán bộ, công tác phí,…; Theo dõi, quản lý hồ sơ cán bộ, công chức cơ quan; Cập nhật lịch công tác của lãnh đạo Ban vào hệ thống; Rà soát thời gian hiệu lực của HĐLĐ; chế độ, chính sách của người lao động; Tổng hợp kết quả tự đánh giá xếp loại của Lãnh đạo phòng và kết quả đánh giá, xếp loại của công chức, người lao động tại phòng; Lập phiếu biểu quyết; Biên bản họp; Biên bản kiểm phiếu; Lập phiếu thu - chi tạm ứng, thu hồi tạm ứng và thanh toán tạm ứng; Lập các biểu mẫu (theo quy định của Kho bạc Nhà nước) cho tất các chứng từ liên quan tới chế độ tiền lương, phụ cấp và các khoản khác liên quan tới cán bộ công chức, người lao động, cán bộ biệt phái của Ban Tổ chức Tỉnh ủy gửi lên hệ thống dịch vụ công kho bạc; Giao dịch đưa chứng từ chi các khoản đi Kho bạc, Ngân hàng (gửi mail, bản giấy,…); Đăng thông tin đấu thầu trên Hệ thống đấu thầu quốc gia; Giao dịch/liên hệ công tác với cơ quan, đơn vị liên quan",
+      "product": "Văn bản; Hồ sơ; Chứng từ; Phiếu, Biên bản",
+      "complexityLevel": 2,
+      "maxHoursText": "1",
+      "points": 60.0,
+      "note": null
+    },
+    {
+      "code": "B.007",
+      "groupCode": "B",
+      "name": "Nộp lưu tài liệu vào Lưu trữ cơ quan; Rà soát, lập Danh mục tài liệu hết thời hạn bảo quản; Chuẩn bị Hội trường (Maket, âm thanh, ánh sáng, kết nối đường truyền,…); Thực hiện công tác chuyển đổi số; công tác ứng dụng công nghệ thông tin; Theo dõi, quản lý mạng nội bộ, hệ thống điều hành tác nghiệp; Rà soát máy móc, thiết bị, đảm bảo thực hiện công tác bảo vệ bí mật nhà nước, an toàn thông tin theo quy định; Bảo trì, cài đặt, sửa chữa hệ thống mạng, máy tính cơ quan, đơn vị; Soạn thảo Công văn, Báo cáo,… trình ký Lãnh đạo phòng; Theo dõi, đôn đốc việc thực hiện cải cách hành chính tại Ban; Cập nhật những quy định mới đối với HĐLĐ, dự thảo điều chỉnh nội dung theo quy định; Lập Báo cáo tuần của phòng; Tổng hợp kết quả tự đánh giá, xếp loại của cá nhân, kết quả xếp loại của cấp có thẩm quyền hàng tháng, hàng quý đối với CBCC tại Ban Tổ chức Tỉnh ủy; Tiếp nhận báo cáo, đơn thư, kết luận kiểm tra, thanh tra hoặc thông tin từ các phòng, ban, ...Kiểm tra tính đầy đủ, hợp lệ của hồ sơ liên quan đến công tác kỷ luật cán bộ; Tham mưu họp tập thể lãnh đạo Ban, thực hiện các quy trình giới thiệu nhân sự theo quy định (các hội nghị, lấy phiếu tín nhiệm) phục vụ công tác cán bộ; Thực hiện kê khai tài sản đối với cán bộ công chức; Tiếp nhận tài sản, kiểm tra và bàn giao cho công chức trực tiếp sử dụng; Tiếp nhận nhu cầu sửa chữa tài sản, đánh giá mức độ, tham mưu Lãnh đạo phòng, Lãnh đạo ban xem xét; Tham mưu Lãnh đạo Ban ký hợp đồng sửa chữa, hồ sơ thanh toán; Theo dõi, giám sát, mua sắm, sửa chữa tài sản, thiết bị cơ quan; Theo dõi, kiểm tra, cập nhập tài sản khi phát sinh tăng, giảm; Kiểm kê quỹ tiền mặt cùng thủ quỹ và lãnh đạo phụ trách hàng tháng và cuối năm; Cập nhật biến động lương, phụ cấp theo lương; bảo hiểm xã hội; BHTN, lập danh sách truy lĩnh lương và truy nộp BHXH-BHYT-BHTN; Báo tăng, giảm bảo hiểm xã hội (gồm: Báo tăng nâng lương thường xuyên, nâng lương trước hạn, tăng cán bộ, công chức người lao động chuyển đến, báo giảm cán bộ công chức người lao động chuyển đi, báo nghỉ ốm, nghỉ sinh…); Kê khai đối tượng giảm trừ gia cảnh, thay đổi thông tin người nộp thuế TNCN",
+      "product": "Hồ sơ; Văn bản; Cuộc; Lượt; Phiếu; Biên bản; Biểu mẫu",
+      "complexityLevel": 2,
+      "maxHoursText": "2",
+      "points": 70.0,
+      "note": null
+    },
+    {
+      "code": "B.008",
+      "groupCode": "B",
+      "name": "Lập báo cáo tháng của phòng; Ghi chép biên bản họp quý, 6 tháng, năm; Tham mưu thực hiện các bước lựa chọn nhà thầu đối với gói thầu Kế hoạch lựa chọn nhà thầu trình phê duyệt; nghiên cứu, tổng hợp, soạn thảo Tờ trình đề nghị phê duyệt dự toán mua sắm, phê duyệt Kế hoạch lựa chọn nhà thầu trình Lãnh đạo cơ quan ( khi có nhu cầu mua sắm, sữa chữa lớn)",
+      "product": "Báo cáo; Văn bản",
+      "complexityLevel": 2,
+      "maxHoursText": "3",
+      "points": 80.0,
+      "note": null
+    },
+    {
+      "code": "B.009",
+      "groupCode": "B",
+      "name": "Thực hiện thủ tục tiêu hủy tài liệu hết thời hạn bảo quản; Xin ý kiến Lãnh đạo Ban, Lãnh đạo các phòng chuyên môn, công chức, người lao động tại Ban về các Nội quy, quy chế, Tiếp thu các ý kiến, hoàn thiện dự thảo các Nội quy, quy chế; Soạn thảo Tờ trình, Kế hoạch, Quyết định, Thông báo, báo cáo; giấy mời; công văn góp ý nội dung dự thảo văn bản; công văn trao đổi với các cơ quan, đơn vị; văn bản triển khai tại cơ quan các văn bản chỉ đạo của cấp trên; cử nhân sự tham gia các ban chỉ đạo, hội, ...theo đề nghị; văn bản trả lời công văn từ các cơ quan, đơn vị, địa phương; ghi chép biên bản các cuộc họp thường xuyên, thông báo kết luận cuộc họp,…; Rà soát các quy trình xử lý văn bản, hồ sơ, công việc nội bộ; Đề xuất cắt giảm các khâu trung gian, đơn giản hóa thủ tục hành chính thuộc thẩm quyền, đẩy mạnh công tác chuyển đổi số trong thực hiện nhiệm vụ phục vụ công tác cải cách hành chính tại cơ quan; Đề xuất ký HĐLĐ, gia hạn, thanh lý HĐ căn cứ chỉ tiêu được giao, khối lượng công việc và tình hình thực tế tại Ban; Rà soát danh sách các trường hợp đến hạn nâng lương thường xuyên, nâng lương trước thời hạn; Tổng hợp, thẩm định hồ sơ đề nghị nâng lương thường xuyên, nâng trước thời hạn; Tổng hợp, thẩm định hồ sơ; tham mưu phê duyệt đối với trường hợp hồ sơ quy hoạch cán bộ đảm bảo theo quy định; Tổng hợp kết quả tự đánh giá, xếp loại của cá nhân, kết quả xếp loại của cấp có thẩm quyền; Tham mưu Lãnh đạo Ban ký hợp đồng, hồ sơ mua sắm tài sản, hồ sơ thanh toán; Lập chứng từ rút, nộp kinh phí tại Ngân hàng, kho bạc khi cán bộ công chức, người lao động cơ quan đề nghị tạm ứng; Kiểm tra, đối chiếu, bổ sung hồ sơ, điều chỉnh, lập chứng từ kế toán trước khi đưa từng chứng từ đã lâp theo trình tự số chứng từ lên hệ thống dịch vụ công kho bạc đồng thời đính kèm chứng từ giấy đã lập trình ký scan lên hệ thống dịch vụ công; Lập danh sách Tính thuế TNCN của CBCC, NLĐ cơ quan (theo tháng); Hạch toán trên phần mềm và trích nộp Thuế TNCN qua hệ thống kho bạc nhà nước theo quy định",
+      "product": "Hồ sơ; tài liệu; Văn bản; Danh sách",
+      "complexityLevel": 2,
+      "maxHoursText": "4",
+      "points": 90.0,
+      "note": "Phân loại văn bản, chỉnh lý, lưu trữ"
+    },
+    {
+      "code": "B.010",
+      "groupCode": "B",
+      "name": "Lập báo cáo quý của phòng; Xây dựng chương trình, kế hoạch công tác hằng quý của phòng; Tổng hợp, thẩm định hồ sơ của các cá nhân, tập thể đề nghị khen thưởng đảm bảo theo quy định; Kiểm tra, đối chiếu, điều chỉnh dự toán, bổ sung dự toán trong năm khi có nhu cầu phát sinh hoặc thay đổi; Nhập dữ liệu phát sinh lên phần mềm: Quản lý tài sản; Nhập chứng từ thanh toán trên Phần mềm kế toán (Lương, xăng xe, công tác phí, chi chính sách cán bộ, chi tặng huy hiệu đảng, khen thưởng cho 102 xã, phường trên địa bàn Tỉnh, chuyển khoản các khoản nợ phát sinh cho nhà cung cấp, rút tiền chi các chế độ chính sách….); in, trình ký và scan chứng từ; Tải, in tất cả các chứng từ đã gửi trên dịch vụ công khi được kho bạc phê duyệt, sắp xếp, lưu trữ chứng từ kế toán",
+      "product": "Báo cáo; Chương trình, Kế hoạch; Hồ sơ; Dự toán; Chứng từ",
+      "complexityLevel": 2,
+      "maxHoursText": "6",
+      "points": 100.0,
+      "note": null
+    },
+    {
+      "code": "B.011",
+      "groupCode": "B",
+      "name": "Kiểm kê và thanh lý tài sản hàng năm; Quyết toán các gói mua sắm sửa chữa",
+      "product": "Lần",
+      "complexityLevel": 2,
+      "maxHoursText": "12",
+      "points": 130.0,
+      "note": null
+    },
+    {
+      "code": "B.012",
+      "groupCode": "B",
+      "name": "Kiểm tra, chịu trách nhiệm thể thức văn bản của Ban",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "0.1",
+      "points": 10.0,
+      "note": null
+    },
+    {
+      "code": "B.013",
+      "groupCode": "B",
+      "name": "Xây dựng, cập nhật lịch làm việc của Lãnh đạo cơ quan, đơn vị; Tính toán và tiến hành chuyển BHXH, BHYT, BHTN hàng tháng theo lương và đúng quy định",
+      "product": "Lịch làm việc",
+      "complexityLevel": 3,
+      "maxHoursText": "1",
+      "points": 70.0,
+      "note": null
+    },
+    {
+      "code": "B.014",
+      "groupCode": "B",
+      "name": "Tổng hợp, xây dựng báo cáo tuần của Ban; Tổng hợp kết quả tự đánh giá, xếp loại của cá nhân, kết quả xếp loại của cấp có thẩm quyền hàng năm đối với CBCC, người lao động tại Ban Tổ chức Tỉnh ủy; Rà soát các văn bản pháp luật và quy định nội bộ liên quan đến công tác kỷ luật, kiểm tra xác minh vi phạm, báo cáo thẩm định đối với nội dung vi phạm, Đề xuất phương án xử lý; Rà soát nhu cầu cán bộ tại Ban Tổ chức Tỉnh ủy; Tiếp nhận; kiểm tra hồ sơ cán bộ; Thẩm định các điều kiện, tiêu chuẩn đảm bảo quy định phục vụ công tác cán bộ; Rà soát, tổng hợp các đối tượng đủ điều kiện tham gia các lớp đào tạo bồi dưỡng, tham mưu danh sách đăng ký tham gia; Rà soát, bổ sung quy hoạch; Tham mưu họp, thực hiện các quy trình về công tác quy hoạch cán bộ; Đối chiếu tài khoản tiền gửi, đối chiếu tài khoản dự toán với KBNN và các biểu mẫu đối chiếu khác theo tháng, quý, năm; Thẩm tra, xác minh, thu thập hồ sơ, tài liệu phục vụ công tác kết luận tiêu chuẩn chính trị; giải quyết đơn thư,…",
+      "product": "Báo cáo; Danh sách; Hồ sơ",
+      "complexityLevel": 3,
+      "maxHoursText": "4",
+      "points": 120.0,
+      "note": null
+    },
+    {
+      "code": "B.015",
+      "groupCode": "B",
+      "name": "Tổng hợp, xây dựng báo cáo tháng của Ban; Lập danh sách lương cho tất cả các chứng từ liên quan tới chế độ tiền lương, phụ cấp và các khoản khác liên quan tới cán bộ công chức, người lao động, cán bộ biệt phái của Ban Tổ chức (bao gồm các khoản giảm trừ theo lương, BHXH, BHYT, BHTN; Thuế TNCN; nộp các khoản đóng góp,...); Rà soát, tổng hợp nhu cầu mua sắm tài sản, thiết bị, công cụ làm việc;",
+      "product": "Báo cáo",
+      "complexityLevel": 3,
+      "maxHoursText": "6",
+      "points": 150.0,
+      "note": null
+    },
+    {
+      "code": "B.016",
+      "groupCode": "B",
+      "name": "Tổng hợp nhu cầu mua sắm tài sản đối với tài sản trong diện mua sắm tập trung theo quy định, trình lãnh đạo ban ký ban hành Công văn gửi Văn phòng Tỉnh ủy",
+      "product": "Báo cáo; Văn bản; Danh sách",
+      "complexityLevel": 3,
+      "maxHoursText": "8",
+      "points": 170.0,
+      "note": null
+    },
+    {
+      "code": "B.017",
+      "groupCode": "B",
+      "name": "Soạn thảo các báo cáo sơ kết, tổng kết việc thực hiện các văn bản, Nghị quyết, Chỉ thị của cấp trên; Lập báo cáo 6 tháng của phòng; Xây dựng chương trình, kế hoạch công tác 6 tháng của phòng",
+      "product": "Báo cáo",
+      "complexityLevel": 3,
+      "maxHoursText": "10",
+      "points": 200.0,
+      "note": null
+    },
+    {
+      "code": "B.018",
+      "groupCode": "B",
+      "name": "Tổng hợp, Xây dựng chương trình, kế hoạch công tác hằng quý của Ban Tổ chức Tỉnh ủy; Tổng hợp báo cáo quý của Ban; Xây dựng dự toán nhu cầu mua sắm theo định mức; Báo cáo thuế quý cho cơ quan thuế; Lập báo cáo năm của phòng; Xây dựng chương trình, kế hoạch công tác năm của phòng; Dự thảo Nội quy, Quy chế; dự thảo điều chỉnh Nội quy, Quy chế; Rà soát việc thực hiện tại Ban so với các chủ trương của Đảng, pháp luật của Nhà nước về tổ chức bộ máy; Tham mưu họp lãnh đạo ban xin ý kiến về chủ trương thành lập, sáp nhập, chia tách, giải thể hoặc đổi tên các phòng ban (nếu việc thực hiện tại Ban không còn phù hợp với quy định hiện hành), số lượng Lãnh đạo Ban, Lãnh đạo các phòng phục vụ công tác tổ chức bộ máy tại Ban",
+      "product": "Chương trình, Kế hoạch; Văn bản; Hồ sơ",
+      "complexityLevel": 3,
+      "maxHoursText": "16",
+      "points": 250.0,
+      "note": null
+    },
+    {
+      "code": "B.019",
+      "groupCode": "B",
+      "name": "Tổng hợp nhu cầu dự toán của các phòng chuyên môn, Lập dự toán ngân sách nhà nước năm kế tiếp trình Lãnh đạo cơ quan ký duyệt",
+      "product": "Danh sách, Dự toán",
+      "complexityLevel": 3,
+      "maxHoursText": "56",
+      "points": 300.0,
+      "note": null
+    },
+    {
+      "code": "B.020",
+      "groupCode": "B",
+      "name": "Theo dõi, rà soát chế độ của Lãnh đạo Ban; Tham mưu họp Lãnh đạo Ban, Hội đồng lương, Hội đồng Thi đua khen thưởng,… liên quan đến chế độ đối với các đồng chí Lãnh đạo Ban; Báo cáo thuế tháng cho cơ quan thuế",
+      "product": "Danh sách; Báo cáo",
+      "complexityLevel": 4,
+      "maxHoursText": "8",
+      "points": 200.0,
+      "note": null
+    },
+    {
+      "code": "B.021",
+      "groupCode": "B",
+      "name": "Tổng hợp báo cáo 6 tháng của Ban; Tổng hợp, Xây dựng chương trình, kế hoạch công tác 6 tháng của Ban Tổ chức Tỉnh ủy",
+      "product": "Báo cáo; Chương trình, Kế hoạch",
+      "complexityLevel": 4,
+      "maxHoursText": "16",
+      "points": 270.0,
+      "note": null
+    },
+    {
+      "code": "B.022",
+      "groupCode": "B",
+      "name": "Tổng hợp báo cáo năm của Ban; Tổng hợp, Xây dựng chương trình, kế hoạch công tác năm của Ban Tổ chức Tỉnh ủy; Báo cáo thuế năm cho cơ quan thuế",
+      "product": "Báo cáo; Chương trình, Kế hoạch",
+      "complexityLevel": 4,
+      "maxHoursText": "24",
+      "points": 300.0,
+      "note": null
+    },
+    {
+      "code": "B.023",
+      "groupCode": "B",
+      "name": "Tham mưu công tác tài chính- kế toán tổng hợp, quyết toán kinh phí hằng năm theo quy định, báo cáo số liệu bổ sung thông tin tài chính gửi trên hệ thống dịch vụ công",
+      "product": "Chứng từ",
+      "complexityLevel": 4,
+      "maxHoursText": "60 ngày",
+      "points": 400.0,
+      "note": null
+    },
+    {
+      "code": "B.024",
+      "groupCode": "B",
+      "name": "Tham mưu xây dựng phần mềm cho cơ quan",
+      "product": "Phần mềm ứng dụng",
+      "complexityLevel": 4,
+      "maxHoursText": "Thực tế",
+      "points": 400.0,
+      "note": null
+    },
+    {
+      "code": "C.001",
+      "groupCode": "C",
+      "name": "Rà soát dữ liệu cơ sở để đôn đốc trên các ứng dụng (20 đơn vị); Tham gia các cuộc họp, Hội nghị, đoàn công tác, phục vụ đoàn cán bộ nghỉ dưỡng sức hàng năm,….",
+      "product": "Lần",
+      "complexityLevel": 1,
+      "maxHoursText": "0.5",
+      "points": 20.0,
+      "note": null
+    },
+    {
+      "code": "C.002",
+      "groupCode": "C",
+      "name": "Soạn thảo các phiếu biểu quyết, cho ý kiến trong cuộc họp của các cấp thẩm quyền; Tham mưu tổ chức trao tặng hoặc cấp phát tặng phẩm, vật phầm, biểu mẫu,... theo quy định",
+      "product": "Phiếu; Lần",
+      "complexityLevel": 1,
+      "maxHoursText": "1",
+      "points": 30.0,
+      "note": null
+    },
+    {
+      "code": "C.003",
+      "groupCode": "C",
+      "name": "In Giấy Chứng nhận, quyết định trao Huy hiệu Đảng cho đảng viên (thuê dịch vụ ngoài, tự in dưới 500 trường hợp)",
+      "product": "Giấy chứng nhận, Quyết định",
+      "complexityLevel": 1,
+      "maxHoursText": "4",
+      "points": 50.0,
+      "note": null
+    },
+    {
+      "code": "C.004",
+      "groupCode": "C",
+      "name": "Tổng hợp ý kiến của các tập thể, cá nhân; Lập danh sách chi tiền thưởng theo quy định/ vào sổ theo dõi",
+      "product": "Danh sách",
+      "complexityLevel": 2,
+      "maxHoursText": "1",
+      "points": 60.0,
+      "note": null
+    },
+    {
+      "code": "C.005",
+      "groupCode": "C",
+      "name": "Cập nhật thông tin của cán bộ, đảng viên về lý lịch, lịch sử chính trị, phân loại sức khỏe, khen thưởng, kỷ luật,... lên các Hệ thống phần mềm, ứng dụng Tổ chức xây dựng Đảng (50 trường hợp); Lập danh sách và cập nhật thông tin theo dõi về CB, ĐV đi nước ngoài và CBĐV có liên quan yếu tố nước ngoài",
+      "product": "Lần; Danh sách",
+      "complexityLevel": 2,
+      "maxHoursText": "2",
+      "points": 70.0,
+      "note": null
+    },
+    {
+      "code": "C.006",
+      "groupCode": "C",
+      "name": "Soạn thảo các Công văn, Quyết định, Báo cáo, Thông báo, Biên bản cuộc họp…thuộc thẩm quyền của Lãnh đạo Ban ký; Tổng hợp số liệu – thống kê (dưới 03 biểu hoặc báo cáo dưới 05 nội dung); Lập và cập nhật danh sách cán bộ thuộc diện bảo vệ, chăm sóc sức khỏe cán bộ theo quy định; Ủy nhiệm cho cấp xã, đơn vị quản lý cán bộ tổ chức tang lễ đối với cán bộ thuộc diện quản lý, cán bộ hưu trí; Tham gia các lớp đào tạo, bồi dưỡng, tập huấn,…",
+      "product": "Văn bản; Mẫu biểu; Danh sách; Lớp",
+      "complexityLevel": 2,
+      "maxHoursText": "4",
+      "points": 90.0,
+      "note": "Văn bản triển khai đến các cơ quan, đơn vị, địa phương thực hiện các Văn bản, Nghị quyết, Chỉ thị,... của cấp trên; phối hợp thực hiện các nội dung có liên quan; báo cáo tình hình triển khai thực hiện nhiệm vụ;… liên quan đến công tác tổ chức cán bộ, công tác đảng, đảng viên, công tác BVCTNB, công tác bảo vệ và chăm sóc sức khỏe cán bộ"
+    },
+    {
+      "code": "C.007",
+      "groupCode": "C",
+      "name": "Tổng hợp danh sách, hồ sơ, thẩm định, báo cáo thẩm định tiêu chuẩn, điều kiện để thực hiện công tác cán bộ: quy hoạch, bổ nhiệm, luân chuyển, điều động, đào tạo, bồi dưỡng, chế độ chính sách,...; công tác đánh giá cán bộ, thi đua, khen thưởng; Công tác Bảo vệ chính trị nội bộ; công tác bảo vệ và chăm sóc sức khỏe cán bộ,... đối với cán bộ thuộc diện quản lý (50 trường hợp); Xây dựng kịch bản điều hành Hội nghị sơ kết, tổng kết, hội nghị tập huấn,…; Tham mưu ứng dụng công nghệ thông tin, thực hiện chuyển đổi số trong công tác bảo vệ chính trị nội bộ; công tác bảo vệ bí mật nhà nước; công tác tổ chức đảng, đảng viên; tổ chức cán bộ; bảo vệ và chăm sóc sức khỏe cán bộ (50 hồ sơ); Đi địa bàn nắm tình hình, báo cáo kết quả nắm tình hình",
+      "product": "Báo cáo; Kịch bản; Hồ sơ",
+      "complexityLevel": 2,
+      "maxHoursText": "8",
+      "points": 110.0,
+      "note": null
+    },
+    {
+      "code": "C.008",
+      "groupCode": "C",
+      "name": "Soạn thảo các bài viết, bài phỏng vấn, bài phát biểu, bài giảng, điếu văn...của lãnh đạo Ban",
+      "product": "Văn bản",
+      "complexityLevel": 2,
+      "maxHoursText": "16",
+      "points": 150.0,
+      "note": null
+    },
+    {
+      "code": "C.009",
+      "groupCode": "C",
+      "name": "Soạn thảo Công văn hướng dẫn nghiệp vụ/ Công văn trao đổi/ Công văn góp ý,…thuộc thẩm quyền của Lãnh đạo Ban ký; Tham mưu Công văn chỉ đạo, Công văn triển khai văn bản của Trung ương,... thuộc thẩm quyền của Ban Thường vụ Tỉnh ủy; Phối hợp báo cáo Thường Trực, Ban Thường vụ Tỉnh ủy, các cơ quan, đơn vị có liên quan; Soạn thảo các Tờ trình của Lãnh đạo Ban trình Thường trực Tỉnh ủy, Ban Thường vụ Tỉnh ủy; Quản lý và khai thác hồ sơ đảng viên, hồ sơ cán bộ, hồ sơ bảo vệ chính trị nội bộ, hồ sơ bảo vệ và chăm sóc sức khỏe cán bộ thuộc diện Ban Thường vụ Tỉnh ủy, Thường trực Tỉnh ủy quản lý; Thực hiện chính sách cán bộ (khám sức khỏe, trao Huy hiệu Đảng, thăm ốm, thăm viếng,…); Theo dõi việc thực hiện các quy định về danh mục cơ quan, bộ phận, vị trí trọng yếu, cơ mật; bảo vệ bí mật Nhà nước; Rà soát, tham mưu sửa đổi, bổ sung quy định (nếu cần thiết)",
+      "product": "Văn bản; Danh sách",
+      "complexityLevel": 3,
+      "maxHoursText": "4",
+      "points": 120.0,
+      "note": "Công văn trao đổi, hướng dẫn đối với trường hợp hồ sơ chưa rõ ràng, quy định còn bất cập; Hướng dẫn nghiệp vụ công tác bảo vệ chính trị nội bộ; Công văn góp ý từ 03 nội dung trở lên; Trình về công tác tổ chức bộ máy, biên chế, vị trí việc làm; công tác quy hoạch, bổ nhiệm, giới thiệu ứng cử, luân chuyển, điều động, tiếp nhận,… cán bộ; công tác đào tạo, bồi dưỡng; công tác chính sách cán bộ; công tác đánh giá, xếp loại cán bộ, các đảng bộ trực thuộc Tỉnh ủy, tập thể diện BTVTU quản lý; công tác khen thưởng; công tác tổ chức đảng, đảng viên; công tác bảo vệ và chăm sóc sức khỏe cán bộ,... thuộc thẩm quyền của Ban Tổ chức"
+    },
+    {
+      "code": "C.010",
+      "groupCode": "C",
+      "name": "Soạn thảo các Báo cáo sơ kết, tổng kết, Báo cáo chuyên đề, Quy chế, Kế hoạch, Đề án, …thuộc thẩm quyền của Lãnh đạo Ban ký; Soạn thảo các Tờ trình của Ban Chấp hành Đảng bộ, Ban Thường vụ Tỉnh ủy; Thẩm định các đề án, quy định của các cơ quan, đơn vị theo chức năng nhiệm vụ của Ban; Theo dõi, tham mưu toàn diện cho Lãnh đạo Ban theo chức năng, nhiệm vụ tại các cơ quan, đơn vị, địa bàn phụ trách; Tham mưu tổ chức tang lễ cấp tỉnh, cấp cao đối với cán bộ thuộc diện Trung ương và Ban Thường vụ Tỉnh ủy quản lý",
+      "product": "Văn bản; Báo cáo",
+      "complexityLevel": 3,
+      "maxHoursText": "16",
+      "points": 250.0,
+      "note": null
+    },
+    {
+      "code": "C.011",
+      "groupCode": "C",
+      "name": "Soạn thảo các bài viết, bài phỏng vấn, bài phát biểu….của Thường trực Tỉnh ủy",
+      "product": "Văn bản",
+      "complexityLevel": 3,
+      "maxHoursText": "20",
+      "points": 270.0,
+      "note": null
+    },
+    {
+      "code": "C.012",
+      "groupCode": "C",
+      "name": "Thẩm định kết quả đánh giá, xếp loại đảng bộ trực thuộc Tỉnh ủy; tập thể diện Ban Thường vụ Tỉnh ủy quản lý",
+      "product": "Hồ sơ",
+      "complexityLevel": 3,
+      "maxHoursText": "56",
+      "points": 300.0,
+      "note": null
+    },
+    {
+      "code": "C.013",
+      "groupCode": "C",
+      "name": "Tham mưu Báo cáo, Kế hoạch, Chương trình, Quy định, Quy chế, Nghị quyết, Chỉ thị, Quyết định... của Ban Thường vụ Tỉnh ủy, Ban Chấp hành Đảng bộ tỉnh",
+      "product": "Văn bản",
+      "complexityLevel": 4,
+      "maxHoursText": "56",
+      "points": 350.0,
+      "note": null
+    },
+    {
+      "code": "C.014",
+      "groupCode": "C",
+      "name": "Tham mưu Báo cáo sơ kết, tổng kết, Báo cáo chuyên đề thuộc thẩm quyền của Ban Thường vụ Tỉnh ủy",
+      "product": "Báo cáo",
+      "complexityLevel": 4,
+      "maxHoursText": "80",
+      "points": 400.0,
+      "note": null
+    },
+    {
+      "code": "D.001",
+      "groupCode": "D",
+      "name": "Ghi Nhật ký công việc cá nhân",
+      "product": "Nhật ký công việc",
+      "complexityLevel": 1,
+      "maxHoursText": "0.2",
+      "points": 10.0,
+      "note": "01 lần/ngày làm việc"
+    },
+    {
+      "code": "D.002",
+      "groupCode": "D",
+      "name": "Vệ sinh cơ quan",
+      "product": "Lần",
+      "complexityLevel": 1,
+      "maxHoursText": "1",
+      "points": 30.0,
+      "note": null
+    },
+    {
+      "code": "D.003",
+      "groupCode": "D",
+      "name": "Duyệt Công việc hoàn thành đối với công chức, viên chức thuộc quyền quản lý; Đặt vé máy bay, phòng khách sạn cho Lãnh đạo cơ quan, đơn vị đi công tác; Thực hiện nhiệm vụ khác theo sự phân công của lãnh đạo các cấp; Thực hiện các nhiệm vụ chuyên môn thực tế nhưng không có sản phẩm đầu ra cụ thể (thẩm định hồ sơ, thực hiện các thủ tục,…); Đảm bảo phương tiện sạch sẽ; kiểm tra, bảo dưỡng định kỳ đúng quy trình; sử dụng vật tư, nhiên liệu tiết kiệm, hiệu quả",
+      "product": "Duyệt Nhật ký; phương tiện sạch sẽ, an toàn",
+      "complexityLevel": 2,
+      "maxHoursText": "1",
+      "points": 60.0,
+      "note": "Cấp trên trực tiếp có thẩm quyền theo dõi, đánh giá sẽ chịu trách nhiệm xác minh nội dung nhiệm vụ không có sản phẩm đầu ra cụ thể"
+    },
+    {
+      "code": "D.004",
+      "groupCode": "D",
+      "name": "Đưa đón Lãnh đạo Ban, công chức, cán bộ công an biệt phái, người lao động đi công tác đúng thời gian, địa điểm; Tuân thủ pháp luật về an toàn giao thông, đảm bảo an toàn cho người và tài liệu trong quá trình di chuyển; Lễ tân, tiếp khách,…",
+      "product": "Lượt; Cuộc",
+      "complexityLevel": 2,
+      "maxHoursText": "2",
+      "points": 70.0,
+      "note": null
+    }
+  ],
+  "skipped": [
+    {
+      "code": "A.007",
+      "reason": "Không có điểm chấm trong file nguồn"
+    }
+  ]
+}

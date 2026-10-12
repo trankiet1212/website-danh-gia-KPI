@@ -1,0 +1,38 @@
+# Phụ thuộc và bản build
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Prisma client sinh tự động
+apps/api/src/generated/
+
+# Biến môi trường — KHÔNG commit secret
+.env
+.env.*
+!.env.example
+
+# Dữ liệu runtime: minh chứng, file xuất, sao lưu
+storage/
+backups/
+# Tài liệu báo cáo sinh ra (có mật khẩu tài khoản DEMO) — không commit
+bao-cao/
+
+# Văn bản gốc và dữ liệu thật (chỉ commit README)
+docs/references/*
+!docs/references/README.md
+
+# Kiểm thử E2E
+playwright-report/
+test-results/
+
+# Log, hệ điều hành, editor
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

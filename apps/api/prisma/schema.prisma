@@ -1,0 +1,885 @@
+// =====================================================================
+// Prisma schema — ĐỢT 1 (GĐ3): danh tính & phân quyền, tổ chức & nhân sự,
+// kỳ đánh giá, nhật ký kiểm toán, cấu hình hệ thống.
+// Thiết kế chuẩn: docs/03-database.md. Các bảng nghiệp vụ còn lại (danh mục,
+// bộ tiêu chí, nhiệm vụ, đánh giá, phê duyệt...) được bổ sung ở GĐ4–6.
+//
+// Quy ước: bảng/cột snake_case (@@map/@map), PK uuid v7, thời điểm timestamptz (UTC),
+// ngày nghiệp vụ kiểu date. Ràng buộc Prisma không biểu diễn được (CHECK, trigger)
+// viết bằng SQL trong migration — xem prisma/migrations/*/migration.sql.
+// =====================================================================
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // Import nội bộ dùng đuôi .js để biên dịch được với module NodeNext
+  importFileExtension = "js"
+  moduleFormat        = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------
+// Enum — phải khớp packages/shared/src/enums.ts
+// ---------------------------------------------------------------------
+
+enum ScopeType {
+  ALL
+  UNITS
+  OWN_UNIT
+  MANAGED
+  SELF
+  NONE
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum RecordStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum UnitType {
+  AGENCY
+  LEADERSHIP_BOARD
+  DEPARTMENT
+  OFFICE
+}
+
+enum KpiProfile {
+  LEADER
+  STAFF
+}
+
+enum JobPositionGroup {
+  LEADERSHIP
+  PROFESSIONAL
+  SHARED_SUPPORT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EmployeeStatus {
+  WORKING
+  TRANSFERRED
+  RETIRED
+  ARCHIVED
+}
+
+enum PeriodType {
+  MONTH
+  QUARTER
+  HALF_YEAR
+  YEAR
+}
+
+enum PeriodStatus {
+  PLANNING
+  OPEN
+  SELF_ASSESSMENT
+  REVIEW
+  CLOSED
+}
+
+enum ConfigStatus {
+  DRAFT
+  PENDING_CONFIRMATION
+  CONFIRMED
+  RETIRED
+}
+
+enum ApprovalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  RETIRED
+}
+
+enum CriteriaItemKind {
+  GENERAL_GROUP
+  GENERAL_ITEM
+  AXIS
+  AXIS_INDICATOR
+}
+
+enum ScoringMethod {
+  PASS_FAIL
+  MANUAL_SCORE
+  QUALITATIVE_LEVEL
+  TARGET_RATIO
+  KPI_COMPOSITE
+  WEIGHTED_INDICATORS
+}
+
+enum MeasureDirection {
+  INCREASE
+  DECREASE
+}
+
+enum MeasureType {
+  NUMBER
+  PERCENT
+  BOOLEAN
+  MILESTONE
+}
+
+enum KeyResultKind {
+  KR
+  KPI
+}
+
+enum SubjectKind {
+  EMPLOYEE
+  UNIT
+}
+
+enum ObjectiveStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EvaluationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  REVIEWED
+  APPROVED
+  RETURNED
+  REOPENED
+  CANCELLED
+}
+
+enum CalculationKind {
+  TRIAL
+  SELF
+  REVIEW
+  APPROVAL
+}
+
+enum AuditResult {
+  SUCCESS
+  DENIED
+  FAILURE
+}
+
+// ---------------------------------------------------------------------
+// A. Danh tính và phân quyền
+// ---------------------------------------------------------------------
+
+model Role {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(200)
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String @id @default(uuid(7)) @db.Uuid
+  code        String @unique @db.VarChar(100)
+  module      String @db.VarChar(50)
+  description String @db.VarChar(300)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id                 String     @id @default(uuid(7)) @db.Uuid
+  username           String     @unique @db.VarChar(100)
+  /// Tên hiển thị cho tài khoản không gắn hồ sơ cán bộ (ví dụ quản trị kỹ thuật)
+  displayName        String?    @map("display_name") @db.VarChar(200)
+  passwordHash       String     @map("password_hash")
+  employeeId         String?    @unique @map("employee_id") @db.Uuid
+  status             UserStatus @default(ACTIVE)
+  mustChangePassword Boolean    @default(true) @map("must_change_password")
+  failedLoginCount   Int        @default(0) @map("failed_login_count")
+  lockedUntil        DateTime?  @map("locked_until") @db.Timestamptz(6)
+  passwordChangedAt  DateTime?  @map("password_changed_at") @db.Timestamptz(6)
+  lastLoginAt        DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int        @default(1)
+
+  employee     Employee?  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  roles        UserRole[] @relation("UserRoleHolder")
+  grantedRoles UserRole[] @relation("UserRoleGrantor")
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model UserRole {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  roleId      String    @map("role_id") @db.Uuid
+  scopeType   ScopeType @map("scope_type")
+  validFrom   DateTime  @default(now()) @map("valid_from") @db.Timestamptz(6)
+  validTo     DateTime? @map("valid_to") @db.Timestamptz(6)
+  grantedById String?   @map("granted_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User           @relation("UserRoleHolder", fields: [userId], references: [id], onDelete: Restrict)
+  role      Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  grantedBy User?          @relation("UserRoleGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  units     UserRoleUnit[]
+
+  @@unique([userId, roleId, scopeType])
+  @@index([userId])
+  @@map("user_roles")
+}
+
+/// Danh sách đơn vị khi scope_type = UNITS (ví dụ PTB phụ trách các phòng).
+model UserRoleUnit {
+  userRoleId String @map("user_role_id") @db.Uuid
+  unitId     String @map("unit_id") @db.Uuid
+
+  userRole UserRole           @relation(fields: [userRoleId], references: [id], onDelete: Cascade)
+  unit     OrganizationalUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+
+  @@id([userRoleId, unitId])
+  @@map("user_role_units")
+}
+
+/// Phiên đăng nhập phía server. Chỉ lưu băm SHA-256 của token, không lưu token gốc.
+model Session {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  tokenHash     String    @unique @map("token_hash") @db.VarChar(128)
+  userId        String    @map("user_id") @db.Uuid
+  csrfTokenHash String    @map("csrf_token_hash") @db.VarChar(128)
+  ip            String?   @db.VarChar(64)
+  userAgent     String?   @map("user_agent") @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model LoginAttempt {
+  id       String   @id @default(uuid(7)) @db.Uuid
+  username String   @db.VarChar(100)
+  ip       String?  @db.VarChar(64)
+  success  Boolean
+  reason   String?  @db.VarChar(100)
+  at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([username, at])
+  @@index([ip, at])
+  @@map("login_attempts")
+}
+
+// ---------------------------------------------------------------------
+// B. Tổ chức và nhân sự
+// ---------------------------------------------------------------------
+
+model OrganizationalUnit {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  code          String       @unique @db.VarChar(50)
+  name          String       @db.VarChar(300)
+  shortName     String?      @map("short_name") @db.VarChar(100)
+  type          UnitType
+  parentId      String?      @map("parent_id") @db.Uuid
+  sortOrder     Int          @default(0) @map("sort_order")
+  status        RecordStatus @default(ACTIVE)
+  effectiveFrom DateTime?    @map("effective_from") @db.Date
+  effectiveTo   DateTime?    @map("effective_to") @db.Date
+  isDemo        Boolean      @default(false) @map("is_demo")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int          @default(1)
+
+  parent        OrganizationalUnit?  @relation("UnitTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children      OrganizationalUnit[] @relation("UnitTree")
+  assignments   EmployeeAssignment[]
+  supervisions  UnitSupervision[]
+  userRoleUnits UserRoleUnit[]
+  objectives    Objective[]
+  evaluations   EvaluationRecord[]
+
+  @@index([parentId])
+  @@map("organizational_units")
+}
+
+/// Chức vụ (cấp 1–5 theo sơ đồ phân công của Ban).
+model Position {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  code         String       @unique @db.VarChar(50)
+  name         String       @db.VarChar(200)
+  level        Int
+  isLeadership Boolean      @map("is_leadership")
+  kpiProfile   KpiProfile   @map("kpi_profile")
+  sortOrder    Int          @default(0) @map("sort_order")
+  status       RecordStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version      Int          @default(1)
+
+  assignments EmployeeAssignment[]
+
+  @@map("positions")
+}
+
+/// Vị trí việc làm (VTVL).
+model JobPosition {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  code          String           @unique @db.VarChar(50)
+  name          String           @db.VarChar(300)
+  group         JobPositionGroup
+  description   String?
+  status        RecordStatus     @default(ACTIVE)
+  /// true = danh mục tạm (chưa có văn bản phê duyệt VTVL) — docs/09-cau-hoi-mo.md
+  isProvisional Boolean          @default(false) @map("is_provisional")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int              @default(1)
+
+  assignments  EmployeeAssignment[]
+  criteriaSets CriteriaSet[]
+
+  @@map("job_positions")
+}
+
+/// Hồ sơ cán bộ — chỉ lưu thông tin cần thiết cho nghiệp vụ đánh giá (docs/03 §3.3.B).
+model Employee {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  employeeCode  String         @unique @map("employee_code") @db.VarChar(50)
+  fullName      String         @map("full_name") @db.VarChar(200)
+  gender        Gender?
+  dateOfBirth   DateTime?      @map("date_of_birth") @db.Date
+  email         String?        @db.VarChar(200)
+  phone         String?        @db.VarChar(30)
+  partyPosition String?        @map("party_position") @db.VarChar(200)
+  govPosition   String?        @map("gov_position") @db.VarChar(200)
+  unionPosition String?        @map("union_position") @db.VarChar(200)
+  status        EmployeeStatus @default(WORKING)
+  isDemo        Boolean        @default(false) @map("is_demo")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int            @default(1)
+
+  user               User?
+  objectives         Objective[]
+  evaluations        EvaluationRecord[]
+  assignments        EmployeeAssignment[] @relation("AssignmentEmployee")
+  managedAssignments EmployeeAssignment[] @relation("AssignmentManager")
+  supervisions       UnitSupervision[]
+
+  @@index([fullName])
+  @@map("employees")
+}
+
+/// Lịch sử phân công: phòng, chức vụ, VTVL, cấp quản lý trực tiếp.
+/// Ràng buộc "mỗi cán bộ chỉ có 1 phân công chính đang hiệu lực" thực thi bằng trigger SQL.
+model EmployeeAssignment {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  employeeId        String    @map("employee_id") @db.Uuid
+  unitId            String    @map("unit_id") @db.Uuid
+  positionId        String    @map("position_id") @db.Uuid
+  jobPositionId     String?   @map("job_position_id") @db.Uuid
+  managerEmployeeId String?   @map("manager_employee_id") @db.Uuid
+  isPrimary         Boolean   @default(true) @map("is_primary")
+  startDate         DateTime  @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  duties            String?
+  decisionRef       String?   @map("decision_ref") @db.VarChar(200)
+  note              String?
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employee    Employee           @relation("AssignmentEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  unit        OrganizationalUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  position    Position           @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  jobPosition JobPosition?       @relation(fields: [jobPositionId], references: [id], onDelete: Restrict)
+  manager     Employee?          @relation("AssignmentManager", fields: [managerEmployeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([unitId])
+  @@index([managerEmployeeId])
+  @@map("employee_assignments")
+}
+
+/// Lãnh đạo Ban phụ trách đơn vị (dùng xác định phạm vi UNITS).
+model UnitSupervision {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  employeeId String    @map("employee_id") @db.Uuid
+  unitId     String    @map("unit_id") @db.Uuid
+  startDate  DateTime  @map("start_date") @db.Date
+  endDate    DateTime? @map("end_date") @db.Date
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  employee Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  unit     OrganizationalUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+
+  @@index([unitId])
+  @@index([employeeId])
+  @@map("unit_supervisions")
+}
+
+// ---------------------------------------------------------------------
+// C. Kỳ đánh giá
+// ---------------------------------------------------------------------
+
+model EvaluationPeriod {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  code           String       @unique @db.VarChar(20)
+  name           String       @db.VarChar(100)
+  type           PeriodType
+  year           Int
+  seq            Int
+  startDate      DateTime     @map("start_date") @db.Date
+  endDate        DateTime     @map("end_date") @db.Date
+  parentId       String?      @map("parent_id") @db.Uuid
+  status         PeriodStatus @default(PLANNING)
+  /// false = theo dõi nhưng không xếp loại riêng (ví dụ Quý IV — [QĐ39] Điều 14, [HD05] III.6)
+  isRated        Boolean      @default(true) @map("is_rated")
+  selfDeadline   DateTime?    @map("self_deadline") @db.Date
+  reviewDeadline DateTime?    @map("review_deadline") @db.Date
+  submitDeadline DateTime?    @map("submit_deadline") @db.Date
+  isDemo         Boolean      @default(false) @map("is_demo")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int          @default(1)
+
+  parent      EvaluationPeriod?  @relation("PeriodTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    EvaluationPeriod[] @relation("PeriodTree")
+  objectives  Objective[]
+  evaluations EvaluationRecord[]
+
+  @@unique([type, year, seq])
+  @@index([parentId])
+  @@map("evaluation_periods")
+}
+
+// ---------------------------------------------------------------------
+// D. Quy tắc tính điểm, danh mục SP/CV, bộ tiêu chí (GĐ5) — docs/07
+// Người tạo/xác nhận lưu dạng uuid (không khóa ngoại); dấu vết đầy đủ ở audit_logs.
+// ---------------------------------------------------------------------
+
+model RuleSet {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(200)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  versions RuleSetVersion[]
+
+  @@map("rule_sets")
+}
+
+/// Phiên bản bộ quy tắc. Đã CONFIRMED thì bất biến (trigger chặn sửa config).
+model RuleSetVersion {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  ruleSetId     String       @map("rule_set_id") @db.Uuid
+  versionNo     Int          @map("version_no")
+  status        ConfigStatus @default(DRAFT)
+  config        Json
+  legalBasis    String       @map("legal_basis")
+  sourceRefs    Json         @default("[]") @map("source_refs")
+  effectiveFrom DateTime?    @map("effective_from") @db.Date
+  checksum      String       @db.VarChar(64)
+  createdById   String?      @map("created_by") @db.Uuid
+  confirmedById String?      @map("confirmed_by") @db.Uuid
+  confirmedAt   DateTime?    @map("confirmed_at") @db.Timestamptz(6)
+  confirmNote   String?      @map("confirm_note")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int          @default(1)
+
+  ruleSet          RuleSet            @relation(fields: [ruleSetId], references: [id], onDelete: Restrict)
+  criteriaVersions CriteriaVersion[]
+  evaluations      EvaluationRecord[]
+
+  @@unique([ruleSetId, versionNo])
+  @@map("rule_set_versions")
+}
+
+model WorkCatalog {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(300)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  versions WorkCatalogVersion[]
+
+  @@map("work_catalogs")
+}
+
+model WorkCatalogVersion {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  catalogId      String         @map("catalog_id") @db.Uuid
+  versionNo      Int            @map("version_no")
+  status         ApprovalStatus @default(DRAFT)
+  /// Điểm của sản phẩm/công việc chuẩn (hệ số quy đổi = điểm / điểm chuẩn)
+  standardPoints Decimal        @map("standard_points") @db.Decimal(10, 2)
+  legalBasis     String?        @map("legal_basis")
+  approvedById   String?        @map("approved_by") @db.Uuid
+  approvedAt     DateTime?      @map("approved_at") @db.Timestamptz(6)
+  approveNote    String?        @map("approve_note")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int            @default(1)
+
+  catalog          WorkCatalog       @relation(fields: [catalogId], references: [id], onDelete: Restrict)
+  items            WorkCatalogItem[]
+  criteriaVersions CriteriaVersion[]
+
+  @@unique([catalogId, versionNo])
+  @@map("work_catalog_versions")
+}
+
+model WorkCatalogItem {
+  id               String  @id @default(uuid(7)) @db.Uuid
+  catalogVersionId String  @map("catalog_version_id") @db.Uuid
+  code             String  @db.VarChar(50)
+  groupCode        String  @map("group_code") @db.VarChar(10)
+  name             String
+  product          String? @db.VarChar(500)
+  complexityLevel  Int     @map("complexity_level")
+  maxHoursText     String? @map("max_hours_text") @db.VarChar(50)
+  points           Decimal @db.Decimal(10, 2)
+  coefficient      Decimal @db.Decimal(12, 6)
+  note             String?
+  sortOrder        Int     @default(0) @map("sort_order")
+
+  catalogVersion WorkCatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([catalogVersionId, code])
+  @@map("work_catalog_items")
+}
+
+/// Bộ tiêu chí cho một nhóm đối tượng (theo nhóm đánh giá KPI, có thể theo VTVL).
+model CriteriaSet {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  code          String      @unique @db.VarChar(50)
+  name          String      @db.VarChar(300)
+  targetKind    SubjectKind @default(EMPLOYEE) @map("target_kind")
+  kpiProfile    KpiProfile  @map("kpi_profile")
+  jobPositionId String?     @map("job_position_id") @db.Uuid
+  description   String?
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  jobPosition JobPosition?      @relation(fields: [jobPositionId], references: [id], onDelete: Restrict)
+  versions    CriteriaVersion[]
+
+  @@map("criteria_sets")
+}
+
+/// Phiên bản bộ tiêu chí. Đã APPROVED thì bất biến (trigger chặn sửa mục tiêu chí).
+model CriteriaVersion {
+  id                   String         @id @default(uuid(7)) @db.Uuid
+  criteriaSetId        String         @map("criteria_set_id") @db.Uuid
+  versionNo            Int            @map("version_no")
+  status               ApprovalStatus @default(DRAFT)
+  periodTypes          PeriodType[]   @map("period_types")
+  generalMax           Decimal        @map("general_max") @db.Decimal(8, 2)
+  resultMax            Decimal        @map("result_max") @db.Decimal(8, 2)
+  ruleSetVersionId     String?        @map("rule_set_version_id") @db.Uuid
+  workCatalogVersionId String?        @map("work_catalog_version_id") @db.Uuid
+  changeNote           String?        @map("change_note")
+  createdById          String?        @map("created_by") @db.Uuid
+  approvedById         String?        @map("approved_by") @db.Uuid
+  approvedAt           DateTime?      @map("approved_at") @db.Timestamptz(6)
+  approveNote          String?        @map("approve_note")
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int            @default(1)
+
+  criteriaSet        CriteriaSet         @relation(fields: [criteriaSetId], references: [id], onDelete: Restrict)
+  ruleSetVersion     RuleSetVersion?     @relation(fields: [ruleSetVersionId], references: [id], onDelete: Restrict)
+  workCatalogVersion WorkCatalogVersion? @relation(fields: [workCatalogVersionId], references: [id], onDelete: Restrict)
+  items              CriteriaItem[]
+  evaluations        EvaluationRecord[]
+
+  @@unique([criteriaSetId, versionNo])
+  @@map("criteria_versions")
+}
+
+model CriteriaItem {
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  criteriaVersionId  String            @map("criteria_version_id") @db.Uuid
+  parentId           String?           @map("parent_id") @db.Uuid
+  kind               CriteriaItemKind
+  code               String            @db.VarChar(50)
+  name               String
+  description        String?
+  maxPoints          Decimal           @map("max_points") @db.Decimal(8, 2)
+  weight             Decimal?          @db.Decimal(8, 4)
+  scoringMethod      ScoringMethod?    @map("scoring_method")
+  measureUnit        String?           @map("measure_unit") @db.VarChar(100)
+  direction          MeasureDirection?
+  target             Decimal?          @db.Decimal(18, 4)
+  baseline           Decimal?          @db.Decimal(18, 4)
+  allowNotApplicable Boolean           @default(false) @map("allow_not_applicable")
+  evidenceRequired   Boolean           @default(false) @map("evidence_required")
+  dataSource         String?           @map("data_source") @db.VarChar(500)
+  sortOrder          Int               @default(0) @map("sort_order")
+
+  criteriaVersion CriteriaVersion  @relation(fields: [criteriaVersionId], references: [id], onDelete: Cascade)
+  parent          CriteriaItem?    @relation("CriteriaTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children        CriteriaItem[]   @relation("CriteriaTree")
+  evaluationItems EvaluationItem[]
+
+  @@unique([criteriaVersionId, code])
+  @@index([parentId])
+  @@map("criteria_items")
+}
+
+// ---------------------------------------------------------------------
+// E. OKR / KPI chỉ tiêu (theo dõi — không tự quy đổi thành điểm)
+// ---------------------------------------------------------------------
+
+model Objective {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  periodId          String          @map("period_id") @db.Uuid
+  ownerKind         SubjectKind     @map("owner_kind")
+  ownerEmployeeId   String?         @map("owner_employee_id") @db.Uuid
+  ownerUnitId       String?         @map("owner_unit_id") @db.Uuid
+  parentObjectiveId String?         @map("parent_objective_id") @db.Uuid
+  code              String          @db.VarChar(50)
+  title             String
+  description       String?
+  status            ObjectiveStatus @default(ACTIVE)
+  isDemo            Boolean         @default(false) @map("is_demo")
+  createdById       String?         @map("created_by") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int             @default(1)
+
+  period        EvaluationPeriod    @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  ownerEmployee Employee?           @relation(fields: [ownerEmployeeId], references: [id], onDelete: Restrict)
+  ownerUnit     OrganizationalUnit? @relation(fields: [ownerUnitId], references: [id], onDelete: Restrict)
+  parent        Objective?          @relation("ObjectiveTree", fields: [parentObjectiveId], references: [id], onDelete: Restrict)
+  children      Objective[]         @relation("ObjectiveTree")
+  keyResults    KeyResult[]
+
+  @@unique([periodId, code])
+  @@index([ownerEmployeeId])
+  @@index([ownerUnitId])
+  @@map("objectives")
+}
+
+model KeyResult {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  objectiveId  String           @map("objective_id") @db.Uuid
+  code         String           @db.VarChar(50)
+  title        String
+  kind         KeyResultKind    @default(KR)
+  measureType  MeasureType      @map("measure_type")
+  direction    MeasureDirection @default(INCREASE)
+  measureUnit  String?          @map("measure_unit") @db.VarChar(100)
+  baseline     Decimal?         @db.Decimal(18, 4)
+  target       Decimal          @db.Decimal(18, 4)
+  currentValue Decimal?         @map("current_value") @db.Decimal(18, 4)
+  weight       Decimal?         @db.Decimal(8, 4)
+  dueDate      DateTime?        @map("due_date") @db.Date
+  sortOrder    Int              @default(0) @map("sort_order")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version      Int              @default(1)
+
+  objective Objective          @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  checkins  KeyResultCheckin[]
+
+  @@unique([objectiveId, code])
+  @@map("key_results")
+}
+
+/// Lịch sử cập nhật kết quả KR — chỉ ghi thêm.
+model KeyResultCheckin {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  keyResultId String   @map("key_result_id") @db.Uuid
+  value       Decimal  @db.Decimal(18, 4)
+  note        String?
+  checkedById String?  @map("checked_by") @db.Uuid
+  checkedAt   DateTime @default(now()) @map("checked_at") @db.Timestamptz(6)
+
+  keyResult KeyResult @relation(fields: [keyResultId], references: [id], onDelete: Cascade)
+
+  @@index([keyResultId, checkedAt])
+  @@map("key_result_checkins")
+}
+
+// ---------------------------------------------------------------------
+// F. Hồ sơ đánh giá, kết quả tính điểm (GĐ5)
+// ---------------------------------------------------------------------
+
+/// Hồ sơ đánh giá của một đối tượng trong một kỳ. APPROVED = đã khóa (trigger chặn sửa trừ khi mở lại).
+model EvaluationRecord {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  periodId             String           @map("period_id") @db.Uuid
+  subjectKind          SubjectKind      @default(EMPLOYEE) @map("subject_kind")
+  subjectEmployeeId    String?          @map("subject_employee_id") @db.Uuid
+  /// Đơn vị của đối tượng tại thời điểm tạo hồ sơ (dùng lọc phạm vi; không đổi khi điều chuyển sau đó)
+  unitId               String           @map("unit_id") @db.Uuid
+  assignmentSnapshot   Json             @map("assignment_snapshot")
+  kpiProfile           KpiProfile       @map("kpi_profile")
+  criteriaVersionId    String           @map("criteria_version_id") @db.Uuid
+  ruleSetVersionId     String           @map("rule_set_version_id") @db.Uuid
+  status               EvaluationStatus @default(DRAFT)
+  revisionNo           Int              @default(1) @map("revision_no")
+  selfTotal            Decimal?         @map("self_total") @db.Decimal(10, 4)
+  reviewTotal          Decimal?         @map("review_total") @db.Decimal(10, 4)
+  approvedTotal        Decimal?         @map("approved_total") @db.Decimal(10, 4)
+  selfRating           String?          @map("self_rating") @db.VarChar(50)
+  reviewRating         String?          @map("review_rating") @db.VarChar(50)
+  approvedRating       String?          @map("approved_rating") @db.VarChar(50)
+  ratingOverrideReason String?          @map("rating_override_reason")
+  reviewFlags          String[]         @default([]) @map("review_flags")
+  submittedAt          DateTime?        @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt           DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  reviewedById         String?          @map("reviewed_by") @db.Uuid
+  approvedAt           DateTime?        @map("approved_at") @db.Timestamptz(6)
+  approvedById         String?          @map("approved_by") @db.Uuid
+  lockedAt             DateTime?        @map("locked_at") @db.Timestamptz(6)
+  isDemo               Boolean          @default(false) @map("is_demo")
+  createdById          String?          @map("created_by") @db.Uuid
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int              @default(1)
+
+  period          EvaluationPeriod        @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  subjectEmployee Employee?               @relation(fields: [subjectEmployeeId], references: [id], onDelete: Restrict)
+  unit            OrganizationalUnit      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  criteriaVersion CriteriaVersion         @relation(fields: [criteriaVersionId], references: [id], onDelete: Restrict)
+  ruleSetVersion  RuleSetVersion          @relation(fields: [ruleSetVersionId], references: [id], onDelete: Restrict)
+  items           EvaluationItem[]
+  calculations    EvaluationCalculation[]
+  history         EvaluationHistory[]
+
+  @@unique([periodId, subjectEmployeeId])
+  @@index([unitId])
+  @@index([status])
+  @@map("evaluation_records")
+}
+
+/// Dữ liệu chấm của từng mục tiêu chí — tách tự đánh giá và thẩm định.
+model EvaluationItem {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  evaluationId   String   @map("evaluation_id") @db.Uuid
+  criteriaItemId String   @map("criteria_item_id") @db.Uuid
+  selfInput      Json?    @map("self_input")
+  reviewInput    Json?    @map("review_input")
+  selfNote       String?  @map("self_note")
+  reviewNote     String?  @map("review_note")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  evaluation   EvaluationRecord @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criteriaItem CriteriaItem     @relation(fields: [criteriaItemId], references: [id], onDelete: Restrict)
+
+  @@unique([evaluationId, criteriaItemId])
+  @@map("evaluation_items")
+}
+
+/// Ảnh chụp lần tính điểm: dữ liệu đầu vào, phiên bản công thức, kết quả, giải thích. Chỉ ghi thêm (trigger).
+model EvaluationCalculation {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  evaluationId      String          @map("evaluation_id") @db.Uuid
+  kind              CalculationKind
+  revisionNo        Int             @map("revision_no")
+  engineVersion     String          @map("engine_version") @db.VarChar(20)
+  ruleSetVersionId  String          @map("rule_set_version_id") @db.Uuid
+  ruleSetChecksum   String          @map("rule_set_checksum") @db.VarChar(64)
+  criteriaVersionId String          @map("criteria_version_id") @db.Uuid
+  inputs            Json
+  result            Json
+  checksum          String          @db.VarChar(64)
+  createdById       String?         @map("created_by") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  evaluation EvaluationRecord @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+
+  @@index([evaluationId, kind, createdAt])
+  @@map("evaluation_calculations")
+}
+
+/// Lịch sử chuyển trạng thái hồ sơ đánh giá — chỉ ghi thêm (trigger).
+model EvaluationHistory {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  evaluationId String   @map("evaluation_id") @db.Uuid
+  action       String   @db.VarChar(50)
+  fromStatus   String?  @map("from_status") @db.VarChar(30)
+  toStatus     String?  @map("to_status") @db.VarChar(30)
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  comment      String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  evaluation EvaluationRecord @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+
+  @@index([evaluationId, createdAt])
+  @@map("evaluation_history")
+}
+
+// ---------------------------------------------------------------------
+// G. Hệ thống
+// ---------------------------------------------------------------------
+
+/// Nhật ký kiểm toán — append-only (trigger chặn UPDATE/DELETE). Không ghi mật khẩu/token.
+model AuditLog {
+  id          BigInt      @id @default(autoincrement())
+  occurredAt  DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  actorUserId String?     @map("actor_user_id") @db.Uuid
+  actorIp     String?     @map("actor_ip") @db.VarChar(64)
+  requestId   String?     @map("request_id") @db.VarChar(64)
+  action      String      @db.VarChar(100)
+  entityType  String      @map("entity_type") @db.VarChar(100)
+  entityId    String?     @map("entity_id") @db.VarChar(100)
+  result      AuditResult
+  changes     Json?
+  prevHash    String?     @map("prev_hash") @db.VarChar(128)
+  hash        String?     @db.VarChar(128)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, occurredAt])
+  @@index([occurredAt])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  key         String   @id @db.VarChar(100)
+  value       Json
+  description String?
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_settings")
+}
