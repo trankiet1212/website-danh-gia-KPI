@@ -167,3 +167,48 @@ Migration `20261011082211_gd5_kpi_okr_scoring` thêm 15 bảng:
 - `evaluation_calculations`: `kind` = TRIAL/SELF/REVIEW/APPROVAL (hiện không lưu TRIAL), `revision_no`, `engine_version`, `rule_set_version_id`, `rule_set_checksum`, `criteria_version_id`, `inputs`, `result` (gồm giải thích), `checksum`. **Toàn bộ bảng chỉ ghi thêm** (trigger).
 - `evaluation_history` (thay cho `approval_history`): action, from/to status, actor, comment — chỉ ghi thêm.
 - Chưa triển khai: `approval_flows/steps` (chuỗi duyệt nhiều bước), `standout_achievements`, `tasks`/`task_*`/`evidence_files` — dữ liệu nhiệm vụ hiện nhập trực tiếp trong phiếu chấm (bảng dòng KPI tổng hợp).
+
+## Giao việc hằng ngày (14/10/2026)
+
+Bảng `daily_tasks` — sổ giao việc theo ngày (docs/06 §5.7). Chỉ để **theo dõi**, không quy đổi thành điểm.
+
+| Trường                                         | Kiểu                        | Ghi chú                                                                    |
+| ---------------------------------------------- | --------------------------- | -------------------------------------------------------------------------- |
+| `id`                                           | uuid v7                     | PK                                                                         |
+| `employee_id`                                  | uuid                        | FK `employees` (RESTRICT) — cán bộ được giao                               |
+| `unit_id`                                      | uuid                        | FK `organizational_units` — đơn vị của cán bộ lúc giao (lưu vết)           |
+| `work_date`                                    | date                        | Ngày làm việc (bất kỳ ngày nào, kể cả cuối tuần)                           |
+| `title`                                        | varchar(500)                | Nội dung công việc                                                         |
+| `description`                                  | text?                       | Yêu cầu, sản phẩm cần có                                                   |
+| `report_status`                                | enum `DailyReportStatus`    | `PENDING` (chưa báo cáo) / `DONE` (đã xong) / `NOT_DONE` (chưa xong)       |
+| `report_note`, `reported_at`                   | text?, timestamptz?         | Báo cáo của cán bộ                                                         |
+| `result`                                       | enum `DailyTaskResult`?     | Đánh giá của cấp trên: `COMPLETED` / `NOT_COMPLETED`; null = chưa đánh giá |
+| `quality`                                      | enum `DailyTaskQuality`?    | `MEETS` (đạt yêu cầu) / `REWORK` (phải làm lại) — bắt buộc khi `COMPLETED` |
+| `timeliness`                                   | enum `DailyTaskTimeliness`? | `ON_TIME` (đúng hạn) / `LATE` (chậm) — bắt buộc khi `COMPLETED`            |
+| `eval_comment`, `evaluated_by`, `evaluated_at` | text?, uuid?, timestamptz?  | Nhận xét, người và thời điểm đánh giá                                      |
+| `assigned_by`                                  | uuid                        | Người giao (users)                                                         |
+| `created_at`, `updated_at`, `version`          |                             | Khóa lạc quan theo `version`                                               |
+
+Chỉ mục: (`employee_id`, `work_date`), (`unit_id`, `work_date`). CHECK (migration SQL): `result` null ⇔ `evaluated_at` null; khi `result = 'COMPLETED'` thì `quality`, `timeliness` khác null; khi `NOT_COMPLETED` thì cả hai null.
+
+## Danh mục sản phẩm/công việc theo vị trí việc làm (15/10/2026)
+
+Bảng `job_position_work_items` — mỗi vị trí việc làm (VTVL) được dùng những sản phẩm/công việc nào trong danh mục (docs/05 "Danh mục theo vị trí việc làm").
+
+| Trường                     | Kiểu               | Ghi chú                                                                                                               |
+| -------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `job_position_id`          | uuid               | FK `job_positions` (CASCADE — bảng con thuần túy)                                                                     |
+| `item_code`                | varchar(50)        | Mã sản phẩm/công việc (ví dụ `C.006`) — theo **mã**, không theo id, nên áp dụng cho mọi phiên bản danh mục có cùng mã |
+| `created_by`, `created_at` | uuid?, timestamptz | Người phân                                                                                                            |
+
+PK (`job_position_id`, `item_code`). Phân mặc định (seed DEMO):
+
+| Nhóm danh mục (theo tiêu đề nhóm trong file nguồn)                                                              | VTVL được phân mặc định                                                                     |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A — "Nhóm công việc theo VTVL lãnh đạo, quản lý cấp phòng"                                                      | Lãnh đạo, quản lý cấp phòng; Lãnh đạo Ban (*)                                               |
+| B — "Nhóm công việc theo VTVL chuyên môn dùng chung (văn thư; hành chính; tài chính nội bộ)"                    | Mọi VTVL nhóm chuyên môn dùng chung (văn thư – hành chính, kế toán, quản trị công sở, CNTT) |
+| C — "Nhóm công việc theo VTVL chuyên môn, nghiệp vụ"                                                            | Mọi VTVL nhóm chuyên môn, nghiệp vụ                                                         |
+| D — "Nhóm công việc khác": D.001 (ghi nhật ký công việc), D.003 (duyệt công việc, nhiệm vụ khác được phân công) | Mọi VTVL                                                                                    |
+| D.002 (vệ sinh cơ quan), D.004 (đưa đón, lễ tân, tiếp khách) (*)                                                | Mọi VTVL nhóm chuyên môn dùng chung                                                         |
+
+(*) Suy luận, file nguồn không ghi rõ — **tạm**, docs/09 #36. Cán bộ tổng hợp chỉnh lại trên giao diện.

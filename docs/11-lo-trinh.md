@@ -125,3 +125,41 @@
 - API: module `profile` — cán bộ xem hồ sơ của mình, tự sửa số điện thoại/email (kiểm tra phiên bản, email trùng, ghi audit `employee.self_update` trong cùng giao dịch). Chặn kích hoạt lại tài khoản gắn hồ sơ không còn công tác.
 - Web: trang "Tài khoản của tôi" hiển thị thông tin cá nhân, công tác, tài khoản, vai trò; hộp thoại sửa thông tin liên hệ. Form hồ sơ cán bộ có trường giới tính.
 - Kiểm tra: typecheck, lint, build đạt; 275 test tự động đạt (thêm 7 test `profile.test.ts`).
+
+## Video demo vận hành và sửa lỗi giao diện (13/10/2026)
+
+- Quay video demo trên CSDL demo riêng (bản sao từ `web_kpi_demo_base`), không đụng `web_kpi_dev`.
+- Sửa 3 lỗi phát hiện khi quay demo (`apps/web/src/features/kpi`):
+  - Chọn sản phẩm trong danh mục tự điền tên nhiệm vụ dài hơn 500 ký tự → lưu phiếu bị từ chối. Nay rút gọn tên theo từ (`catalog-label.ts`, có test).
+  - Lần "Lưu và tính thử" đầu tiên của người thẩm định làm mất bảng kết quả tính thử (phiếu bị dựng lại khi hồ sơ chuyển "Đã nộp" → "Đang thẩm định").
+  - Hộp thoại phê duyệt hiện điểm "99.6" và mã mức "HTTNV" → nay "99,6" và "Hoàn thành tốt nhiệm vụ (HTTNV)".
+- Kiểm tra: typecheck, lint, build đạt; 277 test tự động đạt (thêm 2 test web). Lỗi chập chờn "no tests" ở gói shared vẫn thỉnh thoảng xuất hiện khi chạy lần đầu, chạy lại thì đạt — chưa xác định nguyên nhân.
+
+## Đánh giá theo cấp quản lý, kỳ tháng, giao nhiệm vụ (14/10/2026)
+
+Theo yêu cầu người dùng; thiết kế: docs/05 "Đánh giá theo cấp quản lý", docs/06 §5.4 và §5.6, docs/04, docs/09 #3 và #34 (**tạm**, chờ cơ quan xác nhận).
+
+- **Cấp trên đánh giá cấp dưới:** tạo hồ sơ, giao nhiệm vụ, thẩm định, trả lại, phê duyệt, mở lại chỉ khi người thực hiện có chức vụ cao hơn (`positions.level`) và đối tượng trong phạm vi. Người cùng cấp không đánh giá nhau. Lãnh đạo (`evaluation.review`) tạo được hồ sơ cho cấp dưới và chính mình; Cán bộ tổng hợp giữ nguyên quyền tạo hồ sơ cho mọi cán bộ trong phạm vi.
+- **Giao nhiệm vụ:** `PUT /evaluations/:id/tasks` (`task.assign`), thẻ "Giao nhiệm vụ cho cán bộ" trên hồ sơ chưa nộp. Dòng được giao có cờ `assigned`; cán bộ không sửa/xóa được tên, hệ số, SL kế hoạch (server giữ nguyên khi lưu tự đánh giá).
+- **Kỳ tháng:** hộp "Tạo hồ sơ cho kỳ" và bộ lọc danh sách có chọn năm, kỳ tháng/quý kèm khoảng ngày theo lịch, mặc định tháng hiện tại. Seed: bộ tiêu chí DEMO áp dụng cho Tháng + Quý. DB dev: tạo CS-LD v2, CS-CV v3 (sao chép nguyên bản đã duyệt, thêm loại kỳ Tháng) qua quy trình soạn → trình (tonghop) → phê duyệt (truongban).
+- Bộ dữ liệu test: thêm cán bộ Phó Trưởng ban (cấp 2) gắn với tài khoản `ptbA`.
+- Kiểm tra: typecheck, lint, build đạt; 287 test tự động đạt (thêm `evaluation-hierarchy.test.ts` 9 test, 1 test máy trạng thái).
+
+## Giao việc hằng ngày (14/10/2026)
+
+Theo yêu cầu người dùng (chọn phương án "sổ giao việc theo ngày"); thiết kế: docs/03, docs/04, docs/05, docs/06 §5.7, docs/09 #35.
+
+- DB: bảng `daily_tasks` + 4 enum, migration `20261014161236_daily_tasks` (chỉ thêm bảng; CHECK nhất quán dữ liệu báo cáo/đánh giá). Đã áp dụng cho `web_kpi_dev` và `web_kpi_test`.
+- API `/daily-tasks`: xem theo khoảng ngày (≤ 62 ngày), danh sách cán bộ được giao việc, giao một việc cho nhiều cán bộ, sửa/xóa khi chưa báo cáo, cán bộ báo cáo, cấp trên đánh giá (kết quả, chất lượng, tiến độ, nhận xét). Áp dụng nguyên tắc cấp trên; ghi nhật ký `daily_task.*`. Hàm `subordinateEmployeeWhere` chuyển sang `auth/scope.ts` dùng chung.
+- Web: trang "Giao việc hằng ngày" (`/giao-viec`) xem theo tuần (Thứ Hai → Chủ nhật), nút giao việc ở từng ngày, lọc theo cán bộ, bảng tổng hợp tuần; hộp thoại giao việc, báo cáo, đánh giá, xóa.
+- Kiểm tra: typecheck, lint, build đạt; 299 test tự động đạt (thêm `daily-tasks.test.ts` 9 test, `week.test.ts` 3 test). Kiểm tra giao diện trên DB dev bằng một việc thử, đã xóa sau khi kiểm tra (nhật ký kiểm toán vẫn giữ).
+
+## Danh mục sản phẩm/công việc theo vị trí việc làm (15/10/2026)
+
+Theo yêu cầu người dùng; thiết kế: docs/03, docs/04, docs/05, docs/07, docs/09 #36 (**tạm**).
+
+- DB: bảng `job_position_work_items` (VTVL ↔ mã sản phẩm/công việc), migration `job_position_work_items` (chỉ thêm bảng). Quyền mới `catalog.assign` (Cán bộ tổng hợp).
+- Seed `job-position-work-items.ts`: phân mặc định theo tiêu đề nhóm của file nguồn (A → lãnh đạo; B → dùng chung; C → chuyên môn; D → tất cả, trừ D.002/D.004 → dùng chung); chỉ phân cho VTVL chưa có mục. Đã áp dụng cho DB dev (208 dòng; Lãnh đạo Ban, lãnh đạo phòng: 8 mục; chuyên viên chuyên môn: 16; VTVL dùng chung: 28) và bổ sung quyền `catalog.assign`.
+- API: danh sách mục mặc định lọc theo VTVL của người dùng; `employeeId` lọc theo VTVL của cán bộ được đánh giá (trong phạm vi); `scope=all` cần `catalog.assign` (hoặc `catalog.approve` khi phiên bản chờ duyệt); `GET /work-catalogs/my-job-position`, `GET/PUT /work-catalogs/job-positions...`.
+- Web: trang "Danh mục SP/CV" có các thẻ "Danh mục của tôi", "Toàn bộ danh mục", "Phân theo vị trí việc làm"; phiếu chấm và thẻ giao nhiệm vụ chỉ hiện mục theo VTVL của cán bộ được đánh giá (dòng cũ có mã ngoài danh mục vẫn hiển thị kèm ghi chú).
+- Kiểm tra: typecheck, lint, build đạt; 305 test tự động đạt (thêm `work-catalog-job-positions.test.ts` 6 test; sửa 1 test danh mục cũ cho phù hợp quy tắc mới).

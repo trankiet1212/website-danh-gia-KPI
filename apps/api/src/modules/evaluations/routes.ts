@@ -1,6 +1,7 @@
 /**
  * /api/v1/evaluations — hồ sơ đánh giá.
- * Xem: evaluation.read (theo phạm vi). Tạo hồ sơ: period.manage + evaluation.read.
+ * Xem: evaluation.read (theo phạm vi). Tạo hồ sơ: evaluation.read + (period.manage hoặc evaluation.review —
+ * lãnh đạo chỉ tạo cho cấp dưới; kiểm tra trong service). Giao nhiệm vụ: task.assign (cấp trên).
  * Tự đánh giá/nộp: evaluation.self (chỉ chính đối tượng). Thẩm định/trả lại: evaluation.review.
  * Phê duyệt: evaluation.approve. Mở lại: evaluation.reopen. Phạm vi kiểm tra trong service.
  */
@@ -8,6 +9,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import {
   approveEvaluationSchema,
+  assignTasksSchema,
   calculateSchema,
   createEvaluationSchema,
   evaluationActionSchema,
@@ -17,6 +19,7 @@ import {
   saveEvaluationInputsSchema,
   uuid,
   type ApproveEvaluationInput,
+  type AssignTasksInput,
   type CreateEvaluationInput,
   type EvaluationListQuery,
   type SaveEvaluationInputs,
@@ -35,7 +38,7 @@ export function evaluationsRouter(deps: AppDeps): Router {
   const service = createEvaluationsService(deps.db);
   const router = Router();
   const canRead = authorize(deps.db, 'evaluation.read');
-  const canCreate = authorize(deps.db, 'period.manage', 'evaluation.read');
+  const canCreate = authorize(deps.db, 'evaluation.read');
   const id = (req: Parameters<typeof validParams>[0]) => validParams<{ id: string }>(req).id;
   const withId = <S extends z.ZodType>(body: S) => validate({ params: idParams, body });
 
@@ -85,6 +88,23 @@ export function evaluationsRouter(deps: AppDeps): Router {
       await service.submit(requireAuth(req), id(req), validBody<Action>(req), actorOf(req)),
     );
   });
+
+  router.put(
+    '/:id/tasks',
+    authorize(deps.db, 'task.assign'),
+    withId(assignTasksSchema),
+    async (req, res) => {
+      sendData(
+        res,
+        await service.assignTasks(
+          requireAuth(req),
+          id(req),
+          validBody<AssignTasksInput>(req),
+          actorOf(req),
+        ),
+      );
+    },
+  );
 
   const review = authorize(deps.db, 'evaluation.review');
   router.put('/:id/review', review, withId(saveEvaluationInputsSchema), async (req, res) => {

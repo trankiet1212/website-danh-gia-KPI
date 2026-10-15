@@ -28,6 +28,8 @@ export interface AuthEmployee {
   /** Đơn vị theo phân công chính đang hiệu lực (null nếu chưa có). */
   unitId: string | null;
   unitName: string | null;
+  /** Cấp chức vụ của phân công chính (1 = cao nhất); null nếu chưa có phân công. */
+  positionLevel: number | null;
 }
 
 /** Thông tin người dùng đã xác thực, gắn vào req.auth cho mỗi request. */

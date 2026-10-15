@@ -36,6 +36,7 @@ const me = {
   fullName: 'Tôi',
   unitId: 'unit-me',
   unitName: 'Phòng',
+  positionLevel: 3,
 };
 
 describe('resolveScope', () => {

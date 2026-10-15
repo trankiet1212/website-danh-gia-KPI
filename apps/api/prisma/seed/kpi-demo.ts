@@ -341,7 +341,8 @@ async function seedCriteria(tx: Tx, ruleSetVersionId: string, catalogVersionId: 
         criteriaSetId: set.id,
         versionNo: 1,
         status: 'DRAFT',
-        periodTypes: ['QUARTER'],
+        // Tháng: dùng tạm cùng bộ tiêu chí quý theo yêu cầu người dùng (docs/09 #3)
+        periodTypes: ['MONTH', 'QUARTER'],
         generalMax: 30,
         resultMax: 70,
         ruleSetVersionId,

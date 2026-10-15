@@ -65,6 +65,22 @@ export function employeeScopeWhere(scope: DataScope): Prisma.EmployeeWhereInput 
   return or.length > 0 ? { OR: or } : { id: { in: [] } };
 }
 
+/**
+ * Cán bộ có chức vụ THẤP hơn người thực hiện (positions.level lớn hơn) theo phân công chính đang hiệu lực.
+ * Dùng cho nguyên tắc "cấp trên đánh giá cấp dưới" (docs/05).
+ * Người thực hiện chưa có cấp chức vụ (không gắn cán bộ / chưa phân công) → không ai.
+ */
+export function subordinateEmployeeWhere(
+  actorLevel: number | null | undefined,
+): Prisma.EmployeeWhereInput {
+  if (!actorLevel) return { id: { in: [] } };
+  return {
+    assignments: {
+      some: { isPrimary: true, endDate: null, position: { level: { gt: actorLevel } } },
+    },
+  };
+}
+
 /** Đơn vị có nằm trong phạm vi "theo đơn vị" không (dùng khi tạo/điều chuyển cán bộ). */
 export function scopeCoversUnit(scope: DataScope, unitId: string): boolean {
   return scope.all || scope.unitIds.includes(unitId);

@@ -17,6 +17,7 @@ export const EVALUATION_ACTIONS = [
   'return',
   'approve',
   'reopen',
+  'assignTasks',
 ] as const;
 export type EvaluationAction = (typeof EVALUATION_ACTIONS)[number];
 
@@ -31,6 +32,8 @@ const TRANSITIONS: Record<
   return: { from: ['SUBMITTED', 'UNDER_REVIEW', 'REVIEWED'], to: 'RETURNED' },
   approve: { from: ['REVIEWED'], to: 'APPROVED' },
   reopen: { from: ['APPROVED'], to: 'REOPENED' },
+  // Cấp trên giao danh sách nhiệm vụ trước khi cán bộ nộp (docs/06 §5.6) — không đổi trạng thái
+  assignTasks: { from: ['DRAFT', 'RETURNED'], to: 'SAME' },
 };
 
 export const ACTION_LABELS: Record<EvaluationAction, string> = {
@@ -41,6 +44,7 @@ export const ACTION_LABELS: Record<EvaluationAction, string> = {
   return: 'Trả lại',
   approve: 'Phê duyệt',
   reopen: 'Mở lại kết quả đã duyệt',
+  assignTasks: 'Giao nhiệm vụ',
 };
 
 export function canTransition(from: EvaluationStatus, action: EvaluationAction): boolean {
@@ -68,6 +72,7 @@ const PERIOD_STATUSES_FOR: Record<EvaluationAction, readonly PeriodStatus[]> = {
   return: ['OPEN', 'SELF_ASSESSMENT', 'REVIEW'],
   approve: ['OPEN', 'SELF_ASSESSMENT', 'REVIEW'],
   reopen: ['OPEN', 'SELF_ASSESSMENT', 'REVIEW', 'CLOSED'],
+  assignTasks: ['PLANNING', 'OPEN', 'SELF_ASSESSMENT'],
 };
 
 /**

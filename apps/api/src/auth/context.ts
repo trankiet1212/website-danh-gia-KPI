@@ -18,7 +18,10 @@ export async function loadAuthContext(
         include: {
           assignments: {
             where: { isPrimary: true, endDate: null },
-            include: { unit: { select: { id: true, name: true } } },
+            include: {
+              unit: { select: { id: true, name: true } },
+              position: { select: { level: true } },
+            },
             take: 1,
           },
         },
@@ -57,6 +60,7 @@ export async function loadAuthContext(
       fullName: user.employee.fullName,
       unitId: current?.unit.id ?? null,
       unitName: current?.unit.name ?? null,
+      positionLevel: current?.position.level ?? null,
     };
   }
 

@@ -71,6 +71,17 @@ export interface CatalogItemDto {
   note: string | null;
 }
 
+/** Vị trí việc làm và các mã sản phẩm/công việc được phân (docs/05 "Danh mục theo vị trí việc làm"). */
+export interface JobPositionWorkItemsDto {
+  jobPosition: { id: string; code: string; name: string; group: string };
+  itemCodes: string[];
+  employeeCount: number;
+}
+
+export interface MyJobPositionDto {
+  jobPosition: { id: string; code: string; name: string; group: string } | null;
+}
+
 export interface CatalogVersionDto {
   id: string;
   catalogCode: string;
@@ -302,6 +313,8 @@ export interface EvaluationDetail extends EvaluationListItem {
     return: boolean;
     approve: boolean;
     reopen: boolean;
+    /** Cấp trên giao danh sách nhiệm vụ (docs/06 §5.6). */
+    assignTasks: boolean;
   };
   /** Lý do chưa thể phê duyệt (quy tắc chưa xác nhận, bộ tiêu chí chưa duyệt...). */
   approvalBlockers: string[];

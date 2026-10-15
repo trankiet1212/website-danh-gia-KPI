@@ -144,6 +144,21 @@ export const createCriteriaSetSchema = z.object({
 });
 export type CreateCriteriaSetInput = z.infer<typeof createCriteriaSetSchema>;
 
+export const catalogItemsQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  groupCode: z.string().max(10).optional(),
+  /** Danh mục theo VTVL của cán bộ này (phiếu chấm, giao nhiệm vụ). */
+  employeeId: uuid.optional(),
+  /** mine (mặc định): theo VTVL của người dùng; all: toàn bộ (cần quyền). */
+  scope: z.enum(['mine', 'all']).default('mine'),
+});
+export type CatalogItemsQuery = z.infer<typeof catalogItemsQuerySchema>;
+
+export const assignJobPositionItemsSchema = z.object({
+  itemCodes: z.array(z.string().trim().min(1).max(50)).max(500),
+});
+export type AssignJobPositionItemsInput = z.infer<typeof assignJobPositionItemsSchema>;
+
 export const createCriteriaVersionSchema = z.object({ cloneFromVersionId: optionalUuid });
 
 const optionalNumber = z
@@ -219,6 +234,8 @@ export const compositeRowSchema = z.object({
   exemptCount: nonNegative.default(0),
   exemptNote: optionalText('Căn cứ miễn trừ', 1000),
   exceeded: z.boolean().default(false),
+  /** Dòng do cấp trên giao (docs/06 §5.6): cán bộ không sửa tên, mã danh mục, hệ số, số lượng kế hoạch. */
+  assigned: z.boolean().optional(),
 });
 export type CompositeRow = z.infer<typeof compositeRowSchema>;
 
@@ -259,6 +276,29 @@ export const createEvaluationSchema = z.object({
 export type CreateEvaluationInput = z.infer<typeof createEvaluationSchema>;
 
 export const generateEvaluationsSchema = z.object({ periodId: uuid, unitId: optionalUuid });
+
+/** Một dòng nhiệm vụ cấp trên giao: chỉ phần kế hoạch (cán bộ tự nhập phần thực hiện). */
+export const assignedTaskRowSchema = compositeRowSchema.pick({
+  label: true,
+  catalogItemCode: true,
+  coefficient: true,
+  plannedQty: true,
+});
+export type AssignedTaskRow = z.infer<typeof assignedTaskRowSchema>;
+
+export const assignTasksSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        criteriaItemId: uuid,
+        rows: z.array(assignedTaskRowSchema).max(200),
+      }),
+    )
+    .min(1, 'Chưa có mục nào để giao nhiệm vụ')
+    .max(50),
+  version: versionField,
+});
+export type AssignTasksInput = z.infer<typeof assignTasksSchema>;
 
 export const evaluationActionSchema = z.object({
   comment: optionalText('Ý kiến', 4000),

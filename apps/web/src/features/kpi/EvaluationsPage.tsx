@@ -1,4 +1,7 @@
-/** Danh sách hồ sơ đánh giá trong phạm vi được xem; tạo hồ sơ cho cán bộ trong kỳ (quyền quản lý kỳ). */
+/**
+ * Danh sách hồ sơ đánh giá trong phạm vi được xem; tạo hồ sơ cho cán bộ trong kỳ tháng/quý.
+ * Tạo hồ sơ: Cán bộ tổng hợp (quản lý kỳ) — mọi cán bộ trong phạm vi; lãnh đạo — cấp dưới và chính mình.
+ */
 import { FilePlus2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -11,17 +14,29 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { FormField, Input, Label, Select } from '@/components/ui/form-controls';
+import { formatDate } from '@/lib/format';
 import { Table, TBody, THead, Td, Th, Tr } from '@/components/ui/table';
 import { api } from '@/lib/api-client';
 import { useCan } from '@/lib/auth';
 import { useDebounce } from '@/lib/use-debounce';
 import { useAction, useEvaluations, usePeriods, type EvaluationFilters } from './api';
 import { Num, StatusBadge } from './components';
+import { PeriodOptions } from './period-options';
+import { isCurrentPeriod, yearChoices } from './period-utils';
 
-function GenerateDialog({ onClose }: { onClose: () => void }) {
+function GenerateDialog({ onClose, leader }: { onClose: () => void; leader: boolean }) {
   const toast = useToast();
-  const periods = usePeriods(new Date().getFullYear());
-  const [periodId, setPeriodId] = useState('');
+  const years = yearChoices();
+  const [year, setYear] = useState(years[1]!);
+  const periods = usePeriods(year);
+  const choices = (periods.data ?? []).filter(
+    (p) => p.isRated && p.status !== 'CLOSED' && (p.type === 'MONTH' || p.type === 'QUARTER'),
+  );
+  const [picked, setPicked] = useState<string | null>(null);
+  // Mặc định chọn tháng hiện tại (nếu thuộc năm đang chọn)
+  const periodId =
+    picked ?? choices.find((p) => p.type === 'MONTH' && isCurrentPeriod(p))?.id ?? '';
+  const selected = choices.find((p) => p.id === periodId);
   const gen = useAction(
     (body: object) =>
       api.post<{
@@ -36,22 +51,58 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
       open
       onClose={onClose}
       title="Tạo hồ sơ đánh giá cho kỳ"
-      description="Tạo hồ sơ còn thiếu cho cán bộ trong phạm vi của bạn. Không ghi đè hồ sơ đã có."
+      description={
+        leader
+          ? 'Tạo hồ sơ còn thiếu cho cán bộ cấp dưới trong phạm vi quản lý của bạn và cho chính bạn. Không ghi đè hồ sơ đã có.'
+          : 'Tạo hồ sơ còn thiếu cho cán bộ trong phạm vi của bạn. Không ghi đè hồ sơ đã có.'
+      }
     >
       <div className="space-y-3">
         <FormError error={gen.error} />
-        <FormField id="gen-period" label="Kỳ đánh giá" required>
-          <Select id="gen-period" value={periodId} onChange={(e) => setPeriodId(e.target.value)}>
-            <option value="">— Chọn kỳ —</option>
-            {periods.data
-              ?.filter((p) => p.isRated && p.status !== 'CLOSED')
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
+        <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+          <FormField id="gen-year" label="Năm">
+            <Select
+              id="gen-year"
+              value={year}
+              onChange={(e) => {
+                setYear(Number(e.target.value));
+                setPicked(null);
+                gen.reset();
+              }}
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
                 </option>
               ))}
-          </Select>
-        </FormField>
+            </Select>
+          </FormField>
+          <FormField id="gen-period" label="Kỳ đánh giá (tháng hoặc quý)" required>
+            <Select
+              id="gen-period"
+              value={periodId}
+              onChange={(e) => {
+                setPicked(e.target.value);
+                gen.reset();
+              }}
+            >
+              <option value="">— Chọn kỳ —</option>
+              <PeriodOptions periods={choices} types={['MONTH', 'QUARTER']} />
+            </Select>
+          </FormField>
+        </div>
+        {periods.isSuccess && choices.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Chưa có kỳ tháng/quý đang mở của năm {year}. Người quản lý kỳ tạo các kỳ của năm tại mục
+            “Kỳ đánh giá”.
+          </p>
+        )}
+        {selected && (
+          <p className="text-sm text-muted-foreground">
+            {selected.name}: từ {formatDate(selected.startDate)} đến {formatDate(selected.endDate)}
+            {isCurrentPeriod(selected) && ' (kỳ hiện tại)'}.
+          </p>
+        )}
         {gen.data && (
           <div className="rounded-md border p-3 text-sm">
             <p>
@@ -91,7 +142,9 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
 
 export function EvaluationsPage() {
   const can = useCan();
-  const periods = usePeriods(new Date().getFullYear(), 'QUARTER');
+  const years = yearChoices();
+  const [year, setYear] = useState(years[1]!);
+  const periods = usePeriods(year);
   const [filters, setFilters] = useState<EvaluationFilters>({ page: 1, pageSize: 20 });
   const [q, setQ] = useState('');
   const debounced = useDebounce(q.trim(), 300);
@@ -104,7 +157,8 @@ export function EvaluationsPage() {
         title="Hồ sơ đánh giá"
         description="Tự đánh giá → thẩm định → phê duyệt. Điểm tự đánh giá, điểm thẩm định và điểm đã phê duyệt được lưu tách biệt."
         actions={
-          can('period.manage', 'evaluation.read') && (
+          can('evaluation.read') &&
+          (can('period.manage') || can('evaluation.review')) && (
             <Button onClick={() => setGenerating(true)}>
               <FilePlus2 className="size-4" /> Tạo hồ sơ cho kỳ
             </Button>
@@ -112,6 +166,23 @@ export function EvaluationsPage() {
         }
       />
       <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="ev-year">Năm</Label>
+          <Select
+            id="ev-year"
+            value={year}
+            onChange={(e) => {
+              setYear(Number(e.target.value));
+              setFilters((f) => ({ ...f, periodId: undefined, page: 1 }));
+            }}
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="ev-period">Kỳ</Label>
           <Select
@@ -122,11 +193,10 @@ export function EvaluationsPage() {
             }
           >
             <option value="">Tất cả</option>
-            {periods.data?.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            <PeriodOptions
+              periods={periods.data ?? []}
+              types={['MONTH', 'QUARTER', 'HALF_YEAR', 'YEAR']}
+            />
           </Select>
         </div>
         <div className="space-y-1.5">
@@ -231,7 +301,9 @@ export function EvaluationsPage() {
           />
         </>
       )}
-      {generating && <GenerateDialog onClose={() => setGenerating(false)} />}
+      {generating && (
+        <GenerateDialog onClose={() => setGenerating(false)} leader={can('evaluation.review')} />
+      )}
     </div>
   );
 }

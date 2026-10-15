@@ -63,8 +63,19 @@ describe('Máy trạng thái hồ sơ đánh giá', () => {
 
 describe('Ràng buộc theo trạng thái kỳ (docs/06 §5.4)', () => {
   it('kỳ đang chuẩn bị (PLANNING): chưa được chấm, nộp, thẩm định, phê duyệt hay mở lại', () => {
-    for (const action of EVALUATION_ACTIONS)
+    for (const action of EVALUATION_ACTIONS.filter((a) => a !== 'assignTasks'))
       expect(periodAllows('PLANNING', action, 'DRAFT')).toBe(false);
+  });
+
+  it('giao nhiệm vụ: khi hồ sơ chưa nộp, kỳ đang chuẩn bị/mở/tự đánh giá; không đổi trạng thái', () => {
+    expect(nextStatus('DRAFT', 'assignTasks')).toBe('DRAFT');
+    expect(nextStatus('RETURNED', 'assignTasks')).toBe('RETURNED');
+    for (const s of ['SUBMITTED', 'UNDER_REVIEW', 'REVIEWED', 'APPROVED', 'REOPENED'] as const)
+      expect(canTransition(s, 'assignTasks'), s).toBe(false);
+    expect(periodAllows('PLANNING', 'assignTasks', 'DRAFT')).toBe(true);
+    expect(periodAllows('SELF_ASSESSMENT', 'assignTasks', 'DRAFT')).toBe(true);
+    expect(periodAllows('REVIEW', 'assignTasks', 'RETURNED')).toBe(false);
+    expect(periodAllows('CLOSED', 'assignTasks', 'DRAFT')).toBe(false);
   });
 
   it('tự đánh giá/nộp khi kỳ mở hoặc đang tự đánh giá', () => {

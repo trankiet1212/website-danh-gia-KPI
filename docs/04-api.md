@@ -203,6 +203,13 @@ Cột "Quyền" là mã ở §4. "Phạm vi" nghĩa là kết quả bị lọc t
 
 Mọi thao tác ghi đều kiểm tra `version` (409 khi cũ), ghi `audit_logs` trong cùng transaction. Chi tiết hồ sơ trả `can{...}` (giao diện ẩn/hiện nút) và `approvalBlockers` (lý do chưa thể phê duyệt). Lỗi thiếu dữ liệu khi nộp/hoàn tất: `422 BUSINESS_RULE` với `details.missing`, `details.errors`.
 
+**Bổ sung 14/10/2026 (docs/05 "Đánh giá theo cấp quản lý", docs/06 §5.6):**
+
+- `POST /evaluations`, `POST /evaluations/generate`: route yêu cầu `evaluation.read`; service cho phép khi có `period.manage` (Cán bộ tổng hợp — mọi cán bộ trong phạm vi) hoặc `evaluation.review` (lãnh đạo — chỉ cấp dưới theo nguyên tắc cấp trên, và chính mình). Thiếu cả hai → 403.
+- `PUT /evaluations/:id/tasks` `{ items: [{ criteriaItemId, rows: [{ label, catalogItemCode?, coefficient, plannedQty }] }], version }` — giao danh sách nhiệm vụ; quyền `task.assign` + cấp trên + phạm vi; hồ sơ DRAFT/RETURNED; mục phải có phương pháp `KPI_COMPOSITE`. Lỗi: 403 (không phải cấp trên / tự giao cho mình), 404 (ngoài phạm vi xem), 409 (trạng thái/phiên bản), 422 (kỳ không cho phép, mục sai phương pháp).
+- Thẩm định/trả lại/phê duyệt/mở lại: thêm điều kiện cấp trên (403 nếu người thực hiện không có chức vụ cao hơn).
+- Chi tiết hồ sơ: `can.assignTasks`.
+
 Thay đổi so với §6.2: dùng `PUT .../self`, `PUT .../review` (thay cho PATCH); chưa có `start-review/forward/verify/record-external/cancel`, `GET /evaluations/:id/history` (lịch sử nằm trong chi tiết hồ sơ), `/criteria-versions/:id/diff`, import danh mục từ Excel, `/rating-quota-check`.
 
 ## Thiết kế triển khai GĐ6 — Dashboard, báo cáo, xuất dữ liệu, dự thảo
@@ -224,3 +231,26 @@ Nguyên tắc phân quyền dữ liệu: mọi số liệu lấy từ PostgreSQL
 | POST   | `/drafts/pdf` (cùng body)                                               | `draft.create`   | PDF dự thảo có chữ chìm "DỰ THẢO"                                                                                                                                                                                                                        |
 
 Không lưu file xuất trên máy chủ (sinh theo yêu cầu, trả trực tiếp). Bảng `generated_documents`/duyệt dự thảo (`draft.approve`) để giai đoạn sau.
+
+## Giao việc hằng ngày (14/10/2026 — docs/06 §5.7)
+
+| Method | Path                                                                               | Mục đích                                                                             | Quyền                            |
+| ------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------- |
+| GET    | `/daily-tasks?from&to&employeeId`                                                  | Công việc trong khoảng ngày (tối đa 62 ngày), kèm `can{edit,delete,report,evaluate}` | `task.read` + phạm vi cán bộ     |
+| GET    | `/daily-tasks/assignees`                                                           | Cán bộ người dùng được giao việc (cấp dưới trong phạm vi)                            | `task.assign`                    |
+| POST   | `/daily-tasks` `{employeeIds[1..50], workDate, title, description?}`               | Giao một việc cho một hoặc nhiều cán bộ (mỗi người một bản ghi)                      | `task.assign` + cấp trên         |
+| PATCH  | `/daily-tasks/:id` `{workDate, title, description?, version}`                      | Sửa việc đã giao — chỉ khi cán bộ chưa báo cáo và chưa đánh giá                      | `task.assign` + cấp trên         |
+| DELETE | `/daily-tasks/:id?version=`                                                        | Xóa việc giao nhầm — cùng điều kiện như sửa (chưa phát sinh dữ liệu)                 | `task.assign` + cấp trên         |
+| PUT    | `/daily-tasks/:id/report` `{status: DONE\|NOT_DONE, note?, version}`               | Cán bộ báo cáo kết quả — khi chưa được đánh giá                                      | `task.update`, chỉ chính cán bộ  |
+| PUT    | `/daily-tasks/:id/evaluation` `{result, quality?, timeliness?, comment?, version}` | Cấp trên đánh giá (được sửa lại; nhật ký giữ giá trị cũ)                             | `task.quality.record` + cấp trên |
+
+Lỗi: 403 (không phải cấp trên/không phải chính cán bộ), 404 (ngoài phạm vi xem), 409 (`version` cũ hoặc trạng thái không cho phép), 400/422 (dữ liệu sai). Mọi thao tác ghi `audit_logs` (`daily_task.*`) trong cùng transaction.
+
+## Danh mục theo vị trí việc làm (15/10/2026)
+
+| Method | Path                                                                       | Mục đích                                                                                                                                                                                                                                                                                                 | Quyền            |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| GET    | `/work-catalogs/versions/:id/items?q&groupCode&employeeId&scope=mine\|all` | Mặc định (`mine`): chỉ mục được phân cho VTVL của người dùng. `employeeId`: mục của VTVL cán bộ đó (cán bộ phải trong phạm vi `employee.read`, ngoài phạm vi → 404). `scope=all`: toàn bộ danh mục — chỉ người có `catalog.assign`, hoặc `catalog.approve` khi phiên bản đang chờ phê duyệt (khác → 403) | `catalog.read`   |
+| GET    | `/work-catalogs/my-job-position`                                           | VTVL của người dùng (để hiển thị)                                                                                                                                                                                                                                                                        | `catalog.read`   |
+| GET    | `/work-catalogs/job-positions`                                             | Các VTVL kèm mã sản phẩm/công việc đã phân và số cán bộ                                                                                                                                                                                                                                                  | `catalog.assign` |
+| PUT    | `/work-catalogs/job-positions/:id/items` `{ itemCodes[] }`                 | Thay danh sách mục của một VTVL (mã phải có trong danh mục); ghi nhật ký phần thêm/bớt                                                                                                                                                                                                                   | `catalog.assign` |

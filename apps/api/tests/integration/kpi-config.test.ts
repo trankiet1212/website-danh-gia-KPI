@@ -350,6 +350,11 @@ describe.skipIf(!TEST_DATABASE_URL)('GĐ5 — cấu hình KPI có phiên bản',
           },
         },
       });
+      // Cán bộ chỉ thấy mục được phân cho vị trí việc làm của mình (docs/05)
+      await db.jobPositionWorkItem.createMany({
+        data: ['C.006', 'C.007'].map((itemCode) => ({ jobPositionId: fx.jobPositionId, itemCode })),
+        skipDuplicates: true,
+      });
       const items = await staffA1.get(`/api/v1/work-catalogs/versions/${v.id}/items?q=thẩm định`);
       expect(items.status).toBe(200);
       expect(items.body.data).toHaveLength(1);

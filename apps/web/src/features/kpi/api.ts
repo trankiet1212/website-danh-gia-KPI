@@ -2,6 +2,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CatalogItemDto,
+  JobPositionWorkItemsDto,
+  MyJobPositionDto,
   CatalogVersionDto,
   CriteriaSetDto,
   CriteriaVersionDto,
@@ -21,7 +23,10 @@ export const kpiKeys = {
   ruleSets: ['rule-sets'] as const,
   ruleSetVersion: (id: string) => ['rule-set-version', id] as const,
   catalogs: ['work-catalogs'] as const,
-  catalogItems: (id: string, q: string) => ['work-catalog-items', id, q] as const,
+  catalogItems: (id: string, q: string, opts: CatalogItemsOptions = {}) =>
+    ['work-catalog-items', id, q, opts.employeeId ?? null, opts.scope ?? 'mine'] as const,
+  myJobPosition: ['my-job-position'] as const,
+  jobPositionItems: ['job-position-work-items'] as const,
   criteriaSets: ['criteria-sets'] as const,
   criteriaVersion: (id: string) => ['criteria-version', id] as const,
   objectives: (periodId: string) => ['objectives', periodId] as const,
@@ -57,11 +62,26 @@ export function useCatalogVersions() {
   });
 }
 
-export function useCatalogItems(versionId: string | undefined, q: string) {
+/**
+ * Danh mục SP/CV theo vị trí việc làm (docs/05): mặc định của người dùng; `employeeId` = theo VTVL của cán bộ
+ * được đánh giá; `scope: 'all'` = toàn bộ (cần quyền).
+ */
+export interface CatalogItemsOptions {
+  employeeId?: string;
+  scope?: 'mine' | 'all';
+}
+
+export function useCatalogItems(
+  versionId: string | undefined,
+  q: string,
+  opts: CatalogItemsOptions = {},
+) {
   return useQuery({
-    queryKey: kpiKeys.catalogItems(versionId ?? '', q),
+    queryKey: kpiKeys.catalogItems(versionId ?? '', q, opts),
     queryFn: () =>
-      api.get<CatalogItemDto[]>(`/work-catalogs/versions/${versionId}/items${qs({ q })}`),
+      api.get<CatalogItemDto[]>(
+        `/work-catalogs/versions/${versionId}/items${qs({ q, employeeId: opts.employeeId, scope: opts.scope })}`,
+      ),
     enabled: !!versionId,
     placeholderData: keepPreviousData,
   });
@@ -130,5 +150,21 @@ export function useAction<TArgs, TResult>(
     onSuccess: () => {
       for (const key of invalidate) void qc.invalidateQueries({ queryKey: key });
     },
+  });
+}
+
+export function useMyJobPosition() {
+  return useQuery({
+    queryKey: kpiKeys.myJobPosition,
+    queryFn: () => api.get<MyJobPositionDto>('/work-catalogs/my-job-position'),
+  });
+}
+
+/** Các VTVL kèm mã sản phẩm/công việc đã phân (quyền catalog.assign). */
+export function useJobPositionItems(enabled: boolean) {
+  return useQuery({
+    queryKey: kpiKeys.jobPositionItems,
+    queryFn: () => api.get<JobPositionWorkItemsDto[]>('/work-catalogs/job-positions'),
+    enabled,
   });
 }

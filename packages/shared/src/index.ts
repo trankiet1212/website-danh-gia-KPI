@@ -11,3 +11,4 @@ export * from './schemas/rule-config.js';
 export * from './schemas/kpi.js';
 export * from './report-types.js';
 export * from './schemas/report.js';
+export * from './schemas/daily-task.js';

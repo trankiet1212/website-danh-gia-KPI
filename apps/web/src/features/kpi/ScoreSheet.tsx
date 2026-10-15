@@ -1,6 +1,7 @@
 /**
  * Phiếu chấm điểm một hồ sơ: nhập dữ liệu theo phương pháp chấm của từng tiêu chí.
  * Lớp "tự đánh giá" và lớp "thẩm định" lưu riêng; khi thẩm định, hiển thị kèm dữ liệu tự đánh giá để đối chiếu.
+ * Dòng nhiệm vụ do cấp trên giao (docs/06 §5.6): ở lớp tự đánh giá, cán bộ không sửa tên, hệ số, SL kế hoạch.
  */
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -13,11 +14,13 @@ import type {
 } from '@kpi/shared';
 import { FormError } from '@/components/common/states';
 import { useToast } from '@/components/common/toast-context';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox, Input, Label, Select, Textarea } from '@/components/ui/form-controls';
 import { api, ApiClientError } from '@/lib/api-client';
 import { kpiKeys, useAction, useCatalogItems, type TrialResult } from './api';
+import { catalogLabel } from './catalog-label';
 import { ScoreResultView } from './components';
 
 type Layer = 'self' | 'review';
@@ -78,29 +81,50 @@ function describe(
   }
 }
 
-function RowsEditor({
+/**
+ * Bảng dòng nhiệm vụ của mục KPI tổng hợp.
+ * mode "plan": chỉ phần kế hoạch (tên, danh mục, hệ số, SL kế hoạch) — dùng khi cấp trên giao nhiệm vụ.
+ * lockAssigned: khóa phần kế hoạch của dòng do cấp trên giao (lớp tự đánh giá).
+ */
+export function RowsEditor({
   rows,
   onChange,
   disabled,
   catalogVersionId,
+  mode = 'full',
+  lockAssigned = false,
+  employeeId,
 }: {
   rows: CompositeRow[];
   onChange: (rows: CompositeRow[]) => void;
   disabled: boolean;
   catalogVersionId: string | null;
+  mode?: 'full' | 'plan';
+  lockAssigned?: boolean;
+  /** Cán bộ được đánh giá — ô chọn chỉ hiện sản phẩm/công việc của VTVL người này. */
+  employeeId?: string;
 }) {
-  const catalog = useCatalogItems(catalogVersionId ?? undefined, '');
+  const catalog = useCatalogItems(catalogVersionId ?? undefined, '', { employeeId });
+  const known = new Set(catalog.data?.map((c) => c.code));
+  const plan = mode === 'plan';
+  const locked = (r: CompositeRow) => disabled || (lockAssigned && !!r.assigned);
   const set = (idx: number, patch: Partial<CompositeRow>) =>
     onChange(rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   const num = (v: string) => (v === '' ? 0 : Number(v));
-  const cell = (idx: number, key: keyof CompositeRow, label: string, width = 'w-16') => (
+  const cell = (
+    idx: number,
+    key: keyof CompositeRow,
+    label: string,
+    width = 'w-16',
+    off = disabled,
+  ) => (
     <Input
       aria-label={label}
       type="number"
       step="any"
       min={0}
       className={`h-8 ${width}`}
-      disabled={disabled}
+      disabled={off}
       value={String(rows[idx]![key] ?? 0)}
       onChange={(e) => set(idx, { [key]: num(e.target.value) } as Partial<CompositeRow>)}
     />
@@ -114,16 +138,20 @@ function RowsEditor({
             <tr>
               <th className="px-2 py-1">Nhiệm vụ / sản phẩm</th>
               <th className="px-2 py-1">Hệ số</th>
-              <th className="px-2 py-1">KH</th>
-              <th className="px-2 py-1">HT</th>
-              <th className="px-2 py-1" title="Số lượng có sai sót / số lần làm lại">
-                Làm lại (SL/lần)
-              </th>
-              <th className="px-2 py-1" title="Số lượng chậm / số lần chậm">
-                Chậm (SL/lần)
-              </th>
-              <th className="px-2 py-1">Miễn trừ</th>
-              <th className="px-2 py-1">Vượt mức</th>
+              <th className="px-2 py-1">{plan ? 'SL kế hoạch' : 'KH'}</th>
+              {!plan && (
+                <>
+                  <th className="px-2 py-1">HT</th>
+                  <th className="px-2 py-1" title="Số lượng có sai sót / số lần làm lại">
+                    Làm lại (SL/lần)
+                  </th>
+                  <th className="px-2 py-1" title="Số lượng chậm / số lần chậm">
+                    Chậm (SL/lần)
+                  </th>
+                  <th className="px-2 py-1">Miễn trừ</th>
+                  <th className="px-2 py-1">Vượt mức</th>
+                </>
+              )}
               <th />
             </tr>
           </thead>
@@ -134,15 +162,20 @@ function RowsEditor({
                   <Input
                     aria-label="Tên nhiệm vụ"
                     className="h-8"
-                    disabled={disabled}
+                    disabled={locked(r)}
                     value={r.label}
                     onChange={(e) => set(idx, { label: e.target.value })}
                   />
+                  {r.assigned && !plan && (
+                    <Badge variant="outline" title="Tên, hệ số, số lượng kế hoạch do cấp trên giao">
+                      Cấp trên giao
+                    </Badge>
+                  )}
                   {catalog.data && catalog.data.length > 0 && (
                     <Select
                       aria-label="Sản phẩm trong danh mục"
                       className="h-8 text-xs"
-                      disabled={disabled}
+                      disabled={locked(r)}
                       value={r.catalogItemCode ?? ''}
                       onChange={(e) => {
                         const item = catalog.data.find((c) => c.code === e.target.value);
@@ -152,13 +185,18 @@ function RowsEditor({
                             ? {
                                 catalogItemCode: item.code,
                                 coefficient: item.coefficient,
-                                label: r.label || item.name,
+                                label: r.label || catalogLabel(item.name),
                               }
                             : { catalogItemCode: null },
                         );
                       }}
                     >
                       <option value="">— Không theo danh mục —</option>
+                      {r.catalogItemCode && !known.has(r.catalogItemCode) && (
+                        <option value={r.catalogItemCode}>
+                          {r.catalogItemCode} (ngoài danh mục của vị trí việc làm)
+                        </option>
+                      )}
                       {catalog.data.map((c) => (
                         <option key={c.id} value={c.code}>
                           {c.code} (
@@ -169,44 +207,54 @@ function RowsEditor({
                     </Select>
                   )}
                 </td>
-                <td className="px-2 py-1">{cell(idx, 'coefficient', 'Hệ số', 'w-20')}</td>
-                <td className="px-2 py-1">{cell(idx, 'plannedQty', 'Số lượng kế hoạch')}</td>
-                <td className="px-2 py-1">{cell(idx, 'completedQty', 'Số lượng hoàn thành')}</td>
                 <td className="px-2 py-1">
-                  <div className="flex gap-1">
-                    {cell(idx, 'reworkQty', 'Số lượng làm lại', 'w-14')}
-                    {cell(idx, 'reworkCount', 'Số lần làm lại', 'w-14')}
-                  </div>
+                  {cell(idx, 'coefficient', 'Hệ số', 'w-20', locked(r))}
                 </td>
                 <td className="px-2 py-1">
-                  <div className="flex gap-1">
-                    {cell(idx, 'lateQty', 'Số lượng chậm', 'w-14')}
-                    {cell(idx, 'lateCount', 'Số lần chậm', 'w-14')}
-                  </div>
+                  {cell(idx, 'plannedQty', 'Số lượng kế hoạch', 'w-16', locked(r))}
                 </td>
-                <td className="space-y-1 px-2 py-1">
-                  {cell(idx, 'exemptCount', 'Số lần được miễn trừ', 'w-14')}
-                  {r.exemptCount > 0 && (
-                    <Input
-                      aria-label="Căn cứ miễn trừ"
-                      placeholder="Căn cứ"
-                      className="h-8 w-32"
-                      disabled={disabled}
-                      value={r.exemptNote ?? ''}
-                      onChange={(e) => set(idx, { exemptNote: e.target.value || null })}
-                    />
-                  )}
-                </td>
-                <td className="px-2 py-1 text-center">
-                  <Checkbox
-                    aria-label="Vượt mức yêu cầu"
-                    disabled={disabled}
-                    checked={r.exceeded}
-                    onChange={(e) => set(idx, { exceeded: e.target.checked })}
-                  />
-                </td>
+                {!plan && (
+                  <>
+                    <td className="px-2 py-1">
+                      {cell(idx, 'completedQty', 'Số lượng hoàn thành')}
+                    </td>
+                    <td className="px-2 py-1">
+                      <div className="flex gap-1">
+                        {cell(idx, 'reworkQty', 'Số lượng làm lại', 'w-14')}
+                        {cell(idx, 'reworkCount', 'Số lần làm lại', 'w-14')}
+                      </div>
+                    </td>
+                    <td className="px-2 py-1">
+                      <div className="flex gap-1">
+                        {cell(idx, 'lateQty', 'Số lượng chậm', 'w-14')}
+                        {cell(idx, 'lateCount', 'Số lần chậm', 'w-14')}
+                      </div>
+                    </td>
+                    <td className="space-y-1 px-2 py-1">
+                      {cell(idx, 'exemptCount', 'Số lần được miễn trừ', 'w-14')}
+                      {r.exemptCount > 0 && (
+                        <Input
+                          aria-label="Căn cứ miễn trừ"
+                          placeholder="Căn cứ"
+                          className="h-8 w-32"
+                          disabled={disabled}
+                          value={r.exemptNote ?? ''}
+                          onChange={(e) => set(idx, { exemptNote: e.target.value || null })}
+                        />
+                      )}
+                    </td>
+                    <td className="px-2 py-1 text-center">
+                      <Checkbox
+                        aria-label="Vượt mức yêu cầu"
+                        disabled={disabled}
+                        checked={r.exceeded}
+                        onChange={(e) => set(idx, { exceeded: e.target.checked })}
+                      />
+                    </td>
+                  </>
+                )}
                 <td className="px-2 py-1">
-                  {!disabled && (
+                  {!locked(r) && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -239,6 +287,7 @@ function ItemEditor({
   rule,
   ev,
   reference,
+  lockAssigned,
 }: {
   item: CriteriaItemDto;
   entry: Entry;
@@ -247,6 +296,7 @@ function ItemEditor({
   rule: RuleConfig;
   ev: EvaluationDetail;
   reference?: string;
+  lockAssigned: boolean;
 }) {
   const input = entry.input;
   const set = (patch: Partial<ItemInput>) => onChange({ ...entry, input: { ...input, ...patch } });
@@ -340,6 +390,8 @@ function ItemEditor({
           onChange={(rows) => set({ rows })}
           disabled={disabled}
           catalogVersionId={ev.criteriaVersion.workCatalogVersionId}
+          lockAssigned={lockAssigned}
+          employeeId={ev.employee?.id}
         />
       )}
       {needsD && (
@@ -494,6 +546,7 @@ export function ScoreSheet({
               disabled={!editable}
               rule={rule}
               ev={ev}
+              lockAssigned={layer === 'self'}
               reference={
                 layer === 'review'
                   ? describe(saved.get(it.id)?.selfInput as ItemInput | undefined, it, rule)

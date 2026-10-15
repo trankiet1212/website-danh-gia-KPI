@@ -201,3 +201,19 @@ Bộ tiêu chí: 30 điểm chung (3 mục đảm bảo) + trục 70 điểm KPI
 
 - Unit test engine (`src/scoring/*.test.ts`, 87 test cùng state machine): golden [HD05] từng dòng và từng thành phần; công thức STAFF, WEIGHTED; mức trừ cấu hình; sàn 0; trần A; làm tròn HALF_UP/HALF_EVEN/DOWN; kế hoạch = 0; dữ liệu sai/ngoại lệ; thiếu D/D sai; miễn trừ thiếu căn cứ; NA theo từng chính sách; TARGET_RATIO tăng/giảm; định tính; WEIGHTED_INDICATORS; xếp loại (cờ bắt buộc, điều kiện, `assignOnlyWithinRange`, tạm); kiểm tra bộ tiêu chí; tổng hợp năm; tiến độ KR; checksum.
 - Tích hợp (DB kiểm thử): `kpi-config.test.ts` (kỳ, quy tắc, bộ tiêu chí, danh mục — không tự xác nhận/duyệt, bất biến qua API và trigger), `evaluations.test.ts` (luồng đầy đủ, phạm vi, 3 lớp điểm, khóa sau phê duyệt qua API **và** trigger, mở lại), `objectives.test.ts` (OKR, phạm vi, tiến độ, check-in chỉ ghi thêm).
+
+## Danh mục sản phẩm/công việc theo vị trí việc làm (15/10/2026)
+
+Danh mục chuẩn được phân theo VTVL (bảng `job_position_work_items`, docs/03). Phân mặc định dựa trên tiêu đề nhóm của file nguồn "Danh mục công việc của BTCTU":
+
+| Nhóm danh mục (theo tiêu đề nhóm trong file nguồn)                                                              | VTVL được phân mặc định                                                                     |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A — "Nhóm công việc theo VTVL lãnh đạo, quản lý cấp phòng"                                                      | Lãnh đạo, quản lý cấp phòng; Lãnh đạo Ban (*)                                               |
+| B — "Nhóm công việc theo VTVL chuyên môn dùng chung (văn thư; hành chính; tài chính nội bộ)"                    | Mọi VTVL nhóm chuyên môn dùng chung (văn thư – hành chính, kế toán, quản trị công sở, CNTT) |
+| C — "Nhóm công việc theo VTVL chuyên môn, nghiệp vụ"                                                            | Mọi VTVL nhóm chuyên môn, nghiệp vụ                                                         |
+| D — "Nhóm công việc khác": D.001 (ghi nhật ký công việc), D.003 (duyệt công việc, nhiệm vụ khác được phân công) | Mọi VTVL                                                                                    |
+| D.002 (vệ sinh cơ quan), D.004 (đưa đón, lễ tân, tiếp khách) (*)                                                | Mọi VTVL nhóm chuyên môn dùng chung                                                         |
+
+(*) Suy luận, file nguồn không ghi rõ — **tạm**, docs/09 #36. Cán bộ tổng hợp chỉnh lại trên giao diện.
+
+Việc phân danh mục chỉ giới hạn **mục được hiển thị, chọn**; hệ số, điểm, công thức tính không đổi.

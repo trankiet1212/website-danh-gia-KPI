@@ -14,6 +14,7 @@ import { loadEnv } from '../../src/config/env.js';
 import { createPrismaClient, type Db } from '../../src/lib/prisma.js';
 import type { PeriodType } from '../../src/generated/prisma/client.js';
 import { DEMO_USERS, STAFF_DEMO_USERS, seedDemoUsers } from './demo-users.js';
+import { seedJobPositionWorkItems } from './job-position-work-items.js';
 import { seedKpiDemo } from './kpi-demo.js';
 import { seedPermissionsAndRoles } from './rbac.js';
 import { JOB_POSITIONS, POSITIONS, UNITS } from './reference-data.js';
@@ -244,7 +245,8 @@ async function main(): Promise<void> {
         const demoPassword = process.env['DEMO_USER_PASSWORD'];
         const users = demoPassword ? await seedDemoUsers(tx, demoPassword) : 0;
         const kpi = await seedKpiDemo(tx, DEMO_YEAR);
-        return { employees, periods, users, kpi };
+        const workItems = await seedJobPositionWorkItems(tx);
+        return { employees, periods, users, kpi, workItems };
       },
       { timeout: 60_000 },
     );
@@ -256,6 +258,7 @@ async function main(): Promise<void> {
       `  - ${UNITS.length} đơn vị, ${POSITIONS.length} chức vụ, ${JOB_POSITIONS.length} VTVL (tạm)`,
     );
     console.log(`  - ${summary.employees} cán bộ DEMO (tên giả) kèm phân công`);
+    console.log(`  - +${summary.workItems} mục danh mục SP/CV phân theo VTVL (mặc định, tạm)`);
     console.log(`  - ${summary.periods} kỳ đánh giá năm ${DEMO_YEAR}`);
     console.log(
       `  - Bộ quy tắc RS-CANHAN v1 (CHỜ XÁC NHẬN), danh mục SP/CV (+${summary.kpi.catalogItems} mục mới), ${summary.kpi.criteriaSets} bộ tiêu chí (ĐÃ TRÌNH)`,

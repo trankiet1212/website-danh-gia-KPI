@@ -58,6 +58,7 @@ const CriteriaVersionPage = page(
 );
 const CatalogPage = page(() => import('@/features/kpi/CatalogPage'), 'CatalogPage');
 const ObjectivesPage = page(() => import('@/features/kpi/ObjectivesPage'), 'ObjectivesPage');
+const DailyTasksPage = page(() => import('@/features/daily/DailyTasksPage'), 'DailyTasksPage');
 const EvaluationsPage = page(() => import('@/features/kpi/EvaluationsPage'), 'EvaluationsPage');
 const EvaluationDetailPage = page(
   () => import('@/features/kpi/EvaluationDetailPage'),
@@ -130,6 +131,11 @@ export const router = createBrowserRouter([
             path: 'du-thao',
             element: guarded(['draft.create', 'report.read'], DraftsPage),
             handle: crumb('Dự thảo văn bản'),
+          },
+          {
+            path: 'giao-viec',
+            element: guarded(['task.read'], DailyTasksPage),
+            handle: crumb('Giao việc hằng ngày'),
           },
           {
             path: 'okr',

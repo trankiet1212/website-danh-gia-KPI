@@ -38,9 +38,9 @@ describe.skipIf(!TEST_DATABASE_URL)('Phân quyền và phạm vi dữ liệu', (
   const ids = (...keys: (keyof Fixture['employees'])[]) => keys.map((k) => fx.employees[k]).sort();
 
   describe('Danh sách cán bộ chỉ chứa dữ liệu trong phạm vi', () => {
-    it('Cán bộ tổng hợp (ALL) thấy cả hai phòng', async () => {
+    it('Cán bộ tổng hợp (ALL) thấy cả hai phòng và Lãnh đạo Ban', async () => {
       expect(await visibleIds(s.officer)).toEqual(
-        ids('headA', 'deputyA', 'staffA1', 'staffA2', 'headB', 'staffB1'),
+        ids('headA', 'deputyA', 'staffA1', 'staffA2', 'headB', 'staffB1', 'ptbA'),
       );
     });
     it('Trưởng phòng A (OWN_UNIT) chỉ thấy phòng A', async () => {

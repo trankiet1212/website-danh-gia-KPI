@@ -6,6 +6,7 @@
  * Cơ cấu mẫu:
  *   Đơn vị A: headA (Trưởng phòng) ← deputyA (Phó phòng) ← staffA1 ; staffA2 ← headA
  *   Đơn vị B: headB (Trưởng phòng) ← staffB1
+ *   Lãnh đạo Ban: ptbA (Phó Trưởng ban, cấp 2) — phụ trách đơn vị A (phạm vi UNITS)
  */
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -41,7 +42,10 @@ export interface Fixture {
   units: { A: string; B: string };
   positions: { head: string; deputy: string; staff: string };
   jobPositionId: string;
-  employees: Record<'headA' | 'deputyA' | 'staffA1' | 'staffA2' | 'headB' | 'staffB1', string>;
+  employees: Record<
+    'headA' | 'deputyA' | 'staffA1' | 'staffA2' | 'headB' | 'staffB1' | 'ptbA',
+    string
+  >;
   users: Record<
     'admin' | 'officer' | 'headA' | 'deputyA' | 'staffA1' | 'headB' | 'ptbA' | 'noRole',
     string
@@ -58,6 +62,9 @@ export async function createFixture(db: Db): Promise<Fixture> {
       data: { code: `${code}-${sfx}`, name: `Phòng ${code} ${sfx}`, type: 'DEPARTMENT' },
     });
   const [A, B] = [await unit('TA'), await unit('TB')];
+  const board = await db.organizationalUnit.create({
+    data: { code: `LD-${sfx}`, name: `Lãnh đạo Ban ${sfx}`, type: 'LEADERSHIP_BOARD' },
+  });
 
   const pos = (code: string, level: number, isLeadership: boolean) =>
     db.position.create({
@@ -69,6 +76,7 @@ export async function createFixture(db: Db): Promise<Fixture> {
         kpiProfile: isLeadership ? 'LEADER' : 'STAFF',
       },
     });
+  const vice = await pos('PTB', 2, true);
   const [head, deputy, staff] = [
     await pos('TP', 3, true),
     await pos('PP', 4, true),
@@ -104,6 +112,7 @@ export async function createFixture(db: Db): Promise<Fixture> {
   const staffA2 = await emp('STA2', A.id, staff.id, headA);
   const headB = await emp('HEADB', B.id, head.id, null);
   const staffB1 = await emp('STB1', B.id, staff.id, headB);
+  const ptbA = await emp('PTBA', board.id, vice.id, null);
 
   const user = async (
     name: string,
@@ -148,7 +157,7 @@ export async function createFixture(db: Db): Promise<Fixture> {
       { role: 'UNIT_LEADER', scope: 'OWN_UNIT' },
       { role: 'EMPLOYEE', scope: 'SELF' },
     ]),
-    ptbA: await user('ptba', null, [{ role: 'AGENCY_LEADER', scope: 'UNITS', units: [A.id] }]),
+    ptbA: await user('ptba', ptbA, [{ role: 'AGENCY_LEADER', scope: 'UNITS', units: [A.id] }]),
     noRole: await user('norole', null, []),
   };
 
@@ -157,7 +166,7 @@ export async function createFixture(db: Db): Promise<Fixture> {
     units: { A: A.id, B: B.id },
     positions: { head: head.id, deputy: deputy.id, staff: staff.id },
     jobPositionId: job.id,
-    employees: { headA, deputyA, staffA1, staffA2, headB, staffB1 },
+    employees: { headA, deputyA, staffA1, staffA2, headB, staffB1, ptbA },
     users,
   };
 }

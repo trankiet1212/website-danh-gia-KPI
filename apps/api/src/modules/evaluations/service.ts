@@ -9,10 +9,17 @@
  *
  * Mỗi ảnh chụp lưu: dữ liệu đầu vào, phiên bản engine, checksum bộ quy tắc, phiên bản bộ tiêu chí, kết quả và checksum.
  * Hồ sơ đã phê duyệt chỉ được điều chỉnh qua "mở lại" (quyền evaluation.reopen + lý do, revision + 1).
+ *
+ * Cấp trên đánh giá cấp dưới (docs/05 "Đánh giá theo cấp quản lý"): tạo hồ sơ (lãnh đạo), giao nhiệm vụ,
+ * thẩm định, trả lại, phê duyệt, mở lại — người thực hiện phải có chức vụ cao hơn đối tượng và đối tượng
+ * nằm trong phạm vi của quyền tương ứng.
  */
 import type {
   ApproveEvaluationInput,
+  AssignedTaskRow,
+  AssignTasksInput,
   CalculationDto,
+  CompositeRow,
   CreateEvaluationInput,
   EvaluationDetail,
   EvaluationHistoryDto,
@@ -27,7 +34,7 @@ import type {
 } from '@kpi/shared';
 import { EVALUATION_STATUSES, PERIOD_STATUS_LABELS } from '@kpi/shared';
 import type { Prisma } from '../../generated/prisma/client.js';
-import { employeeScopeWhere, resolveScope } from '../../auth/scope.js';
+import { employeeScopeWhere, resolveScope, subordinateEmployeeWhere } from '../../auth/scope.js';
 import type { AuthContext, DataScope } from '../../auth/types.js';
 import { writeAudit, type AuditActor } from '../../lib/audit.js';
 import { withDbErrors } from '../../lib/db-errors.js';
@@ -76,6 +83,72 @@ export function evaluationScopeWhere(scope: DataScope | null): Prisma.Evaluation
   }
   if (scope.selfEmployeeId) or.push({ subjectEmployeeId: scope.selfEmployeeId });
   return or.length > 0 ? { OR: or } : NONE;
+}
+
+/** Các quyền chỉ cấp trên được thực hiện trên hồ sơ của cán bộ. */
+const SUPERIOR_ONLY: ReadonlySet<PermissionCode> = new Set<PermissionCode>([
+  'evaluation.review',
+  'evaluation.approve',
+  'evaluation.reopen',
+  'task.assign',
+]);
+
+const EMPTY_EXECUTION = {
+  completedQty: 0,
+  reworkQty: 0,
+  reworkCount: 0,
+  lateQty: 0,
+  lateCount: 0,
+  exemptCount: 0,
+  exemptNote: null,
+  exceeded: false,
+} satisfies Partial<CompositeRow>;
+
+const rowKey = (r: { label: string; catalogItemCode?: string | null }) =>
+  `${r.label.trim().toLowerCase()}|${r.catalogItemCode ?? ''}`;
+
+/**
+ * Cấp trên giao lại danh sách nhiệm vụ (docs/06 §5.6): dòng giao trùng tên + mã danh mục giữ số liệu
+ * cán bộ đã nhập; dòng bỏ khỏi danh sách giao bị xóa; dòng cán bộ tự thêm giữ nguyên (xếp sau).
+ */
+export function mergeAssignedRows(
+  current: CompositeRow[],
+  assigned: AssignedTaskRow[],
+): CompositeRow[] {
+  const previous = new Map(current.filter((r) => r.assigned).map((r) => [rowKey(r), r]));
+  const own = current.filter((r) => !r.assigned);
+  const next = assigned.map((a) => ({
+    ...EMPTY_EXECUTION,
+    ...previous.get(rowKey(a)),
+    label: a.label,
+    catalogItemCode: a.catalogItemCode ?? null,
+    coefficient: a.coefficient,
+    plannedQty: a.plannedQty,
+    assigned: true,
+  }));
+  return [...next, ...own];
+}
+
+/**
+ * Khi cán bộ lưu tự đánh giá: giữ nguyên phần kế hoạch (tên, mã danh mục, hệ số, SL kế hoạch) của các
+ * dòng cấp trên giao — kể cả khi bị xóa/sửa ở phía người dùng; dòng tự thêm không được gắn cờ "giao".
+ */
+export function protectAssignedRows(
+  stored: CompositeRow[],
+  incoming: CompositeRow[],
+): CompositeRow[] {
+  const locked = stored.filter((r) => r.assigned);
+  const incomingAssigned = incoming.filter((r) => r.assigned);
+  const own = incoming.filter((r) => !r.assigned).map((r) => ({ ...r, assigned: undefined }));
+  const kept = locked.map((l, i) => ({
+    ...(incomingAssigned[i] ?? l),
+    label: l.label,
+    catalogItemCode: l.catalogItemCode ?? null,
+    coefficient: l.coefficient,
+    plannedQty: l.plannedQty,
+    assigned: true,
+  }));
+  return [...kept, ...own];
 }
 
 const num = (v: { toNumber(): number } | null) => (v === null ? null : v.toNumber());
@@ -206,8 +279,47 @@ export function createEvaluationsService(db: Db) {
 
   const scopeOf = (auth: AuthContext, perm: PermissionCode) =>
     evaluationScopeWhere(resolveScope(auth, perm));
+  /** Phạm vi thao tác: quyền đánh giá chỉ áp lên hồ sơ của cán bộ cấp dưới (chức vụ thấp hơn). */
+  const actorScope = (
+    auth: AuthContext,
+    perm: PermissionCode,
+  ): Prisma.EvaluationRecordWhereInput =>
+    SUPERIOR_ONLY.has(perm)
+      ? {
+          AND: [
+            scopeOf(auth, perm),
+            { subjectEmployee: subordinateEmployeeWhere(auth.employee?.positionLevel) },
+          ],
+        }
+      : scopeOf(auth, perm);
   const covers = async (auth: AuthContext, id: string, perm: PermissionCode) =>
-    auth.permissions.has(perm) && (await repo.count({ AND: [{ id }, scopeOf(auth, perm)] })) > 0;
+    auth.permissions.has(perm) && (await repo.count({ AND: [{ id }, actorScope(auth, perm)] })) > 0;
+
+  /**
+   * Cán bộ người dùng được tạo hồ sơ (docs/05): lãnh đạo (evaluation.review) — cấp dưới trong phạm vi và
+   * chính mình; Cán bộ tổng hợp (period.manage, không có evaluation.review) — mọi cán bộ trong phạm vi xem.
+   */
+  function creatableWhere(auth: AuthContext): Prisma.EmployeeWhereInput | null {
+    const review = resolveScope(auth, 'evaluation.review');
+    if (review) {
+      const or: Prisma.EmployeeWhereInput[] = [
+        {
+          AND: [employeeScopeWhere(review), subordinateEmployeeWhere(auth.employee?.positionLevel)],
+        },
+      ];
+      if (auth.employee) or.push({ id: auth.employee.id });
+      return { OR: or };
+    }
+    const read = auth.permissions.has('period.manage')
+      ? resolveScope(auth, 'evaluation.read')
+      : null;
+    return read ? employeeScopeWhere(read) : null;
+  }
+  function assertCanCreate(auth: AuthContext) {
+    const where = creatableWhere(auth);
+    if (!where) throw new AppError('FORBIDDEN', 'Bạn không có quyền tạo hồ sơ đánh giá');
+    return where;
+  }
   const isSubject = (auth: AuthContext, row: { subjectEmployeeId: string | null }) =>
     !!auth.employee && auth.employee.id === row.subjectEmployeeId;
 
@@ -250,7 +362,10 @@ export function createEvaluationsService(db: Db) {
     if (isSubject(auth, row))
       throw new AppError('FORBIDDEN', `Không được tự ${what} hồ sơ của chính mình`);
     if (!(await covers(auth, row.id, perm)))
-      throw new AppError('FORBIDDEN', `Hồ sơ ngoài phạm vi ${what} của bạn`);
+      throw new AppError(
+        'FORBIDDEN',
+        `Hồ sơ ngoài phạm vi ${what} của bạn — chỉ cấp trên (chức vụ cao hơn, trong phạm vi quản lý) mới được ${what}`,
+      );
   }
 
   function validateItems(row: EvaluationDetailRow, input: SaveEvaluationInputs) {
@@ -314,10 +429,11 @@ export function createEvaluationsService(db: Db) {
   async function detail(auth: AuthContext, id: string): Promise<EvaluationDetail> {
     const row = await load(auth, id);
     const subject = isSubject(auth, row);
-    const [canReview, canApprove, canReopen] = await Promise.all([
+    const [canReview, canApprove, canReopen, canAssign] = await Promise.all([
       covers(auth, id, 'evaluation.review'),
       covers(auth, id, 'evaluation.approve'),
       covers(auth, id, 'evaluation.reopen'),
+      covers(auth, id, 'task.assign'),
     ]);
     const blockers = approvalBlockers(row);
     const actorIds = [
@@ -377,6 +493,11 @@ export function createEvaluationsService(db: Db) {
         return: reviewOk && allowed('return'),
         approve: !subject && canApprove && allowed('approve') && blockers.length === 0,
         reopen: !subject && canReopen && allowed('reopen'),
+        assignTasks:
+          !subject &&
+          canAssign &&
+          allowed('assignTasks') &&
+          row.criteriaVersion.items.some((i) => i.scoringMethod === 'KPI_COMPOSITE'),
       },
       approvalBlockers: blockers,
     };
@@ -514,15 +635,16 @@ export function createEvaluationsService(db: Db) {
     },
 
     async create(auth: AuthContext, input: CreateEvaluationInput, actor: AuditActor) {
+      const where = assertCanCreate(auth);
       const period = await assertPeriodForCreate(input.periodId);
-      const scope = resolveScope(auth, 'evaluation.read');
-      const [emp] = scope
-        ? await repo.employeesWithAssignment({
-            AND: [{ id: input.employeeId }, employeeScopeWhere(scope)],
-          })
-        : [];
+      const [emp] = await repo.employeesWithAssignment({
+        AND: [{ id: input.employeeId }, where],
+      });
       if (!emp)
-        throw new AppError('NOT_FOUND', 'Không tìm thấy cán bộ (hoặc cán bộ không còn công tác)');
+        throw new AppError(
+          'NOT_FOUND',
+          'Không tìm thấy cán bộ trong phạm vi bạn được tạo hồ sơ (cấp dưới trong phạm vi quản lý hoặc chính mình), hoặc cán bộ không còn công tác',
+        );
       const id = await createOne(auth, period, emp, input.criteriaVersionId, actor);
       return detail(auth, id);
     },
@@ -533,12 +655,11 @@ export function createEvaluationsService(db: Db) {
       input: { periodId: string; unitId?: string | null },
       actor: AuditActor,
     ) {
+      const where = assertCanCreate(auth);
       const period = await assertPeriodForCreate(input.periodId);
-      const scope = resolveScope(auth, 'evaluation.read');
-      if (!scope) throw new AppError('FORBIDDEN', 'Bạn không có quyền xem hồ sơ đánh giá');
       const employees = await repo.employeesWithAssignment({
         AND: [
-          employeeScopeWhere(scope),
+          where,
           input.unitId
             ? { assignments: { some: { isPrimary: true, endDate: null, unitId: input.unitId } } }
             : {},
@@ -582,7 +703,18 @@ export function createEvaluationsService(db: Db) {
       assertPeriodAllows(row, 'saveSelf');
       if (input.flags?.length)
         throw new AppError('VALIDATION_ERROR', 'Cờ điều kiện xếp loại do người thẩm định ghi nhận');
-      const items = validateItems(row, input);
+      const stored = new Map(row.items.map((i) => [i.criteriaItemId, parseItemInput(i.selfInput)]));
+      const items = validateItems(row, {
+        ...input,
+        items: input.items.map((i) => {
+          const before = stored.get(i.criteriaItemId)?.rows ?? [];
+          if (!before.some((r) => r.assigned) && !i.input.rows?.some((r) => r.assigned)) return i;
+          return {
+            ...i,
+            input: { ...i.input, rows: protectAssignedRows(before, i.input.rows ?? []) },
+          };
+        }),
+      });
       const to = nextStatus(row.status, 'saveSelf')!;
       const ok = await repo.saveInputs({
         id,
@@ -649,6 +781,64 @@ export function createEvaluationsService(db: Db) {
               selfTotal: snap.result.totalRounded,
               selfRating: snap.result.rating.eligible,
               checksum: snap.checksum,
+            },
+          }),
+      });
+      if (!ok) throw conflict();
+      return detail(auth, id);
+    },
+
+    /** Cấp trên giao danh sách nhiệm vụ cho cán bộ (docs/06 §5.6) — không đổi trạng thái hồ sơ. */
+    async assignTasks(auth: AuthContext, id: string, input: AssignTasksInput, actor: AuditActor) {
+      const row = await load(auth, id);
+      if (isSubject(auth, row))
+        throw new AppError('FORBIDDEN', 'Không được tự giao nhiệm vụ cho chính mình');
+      if (!(await covers(auth, id, 'task.assign')))
+        throw new AppError(
+          'FORBIDDEN',
+          'Chỉ cấp trên (chức vụ cao hơn, trong phạm vi quản lý) mới được giao nhiệm vụ cho cán bộ này',
+        );
+      assertTransition(row, 'assignTasks');
+      assertPeriodAllows(row, 'assignTasks');
+      const criteria = new Map(row.criteriaVersion.items.map((i) => [i.id, i]));
+      const bad = input.items.filter(
+        (i) => criteria.get(i.criteriaItemId)?.scoringMethod !== 'KPI_COMPOSITE',
+      );
+      if (bad.length > 0)
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Chỉ giao nhiệm vụ cho mục chấm theo phương pháp KPI tổng hợp của bộ tiêu chí hồ sơ',
+          { items: bad.map((b) => b.criteriaItemId) },
+        );
+      const saved = new Map(row.items.map((i) => [i.criteriaItemId, i]));
+      const items = input.items.map((i) => {
+        const s = saved.get(i.criteriaItemId);
+        const before = parseItemInput(s?.selfInput) ?? {};
+        return {
+          criteriaItemId: i.criteriaItemId,
+          input: json({ ...before, rows: mergeAssignedRows(before.rows ?? [], i.rows) }),
+          note: s?.selfNote ?? null,
+        };
+      });
+      const count = input.items.reduce((n, i) => n + i.rows.length, 0);
+      const ok = await repo.saveInputs({
+        id,
+        expectVersion: input.version,
+        from: [row.status],
+        data: {},
+        layer: 'self',
+        items,
+        history: history(auth, 'assignTasks', row.status, row.status, `Giao ${count} nhiệm vụ`),
+        onWrite: (tx) =>
+          writeAudit(tx, actor, {
+            action: 'evaluation.assign_tasks',
+            entityType: 'evaluation_record',
+            entityId: id,
+            changes: {
+              items: input.items.map((i) => ({
+                criteriaItemId: i.criteriaItemId,
+                rows: i.rows.map((r) => r.label),
+              })),
             },
           }),
       });

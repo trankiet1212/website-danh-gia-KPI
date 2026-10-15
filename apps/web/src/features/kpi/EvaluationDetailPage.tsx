@@ -26,6 +26,7 @@ import { api } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { kpiKeys, useAction, useEvaluation } from './api';
+import { AssignTasksCard } from './AssignTasksCard';
 import { Num, ProvisionalNotice, ScoreResultView, StatusBadge } from './components';
 import { ScoreSheet } from './ScoreSheet';
 
@@ -45,6 +46,7 @@ const ACTION_LABELS: Record<string, string> = {
   return: 'Trả lại',
   approve: 'Phê duyệt',
   reopen: 'Mở lại',
+  assignTasks: 'Giao nhiệm vụ',
 };
 const statusLabel = (s: string | null) =>
   s ? (EVALUATION_STATUS_LABELS[s as EvaluationStatus] ?? s) : '—';
@@ -93,8 +95,13 @@ function ApproveDialog({ ev, onClose }: { ev: EvaluationDetail; onClose: () => v
       <div className="space-y-3">
         <FormError error={approve.error} />
         <p className="text-sm">
-          Điểm thẩm định: <strong>{ev.reviewTotal ?? '—'}</strong>. Mức đề xuất theo quy tắc:{' '}
-          <strong>{eligible ?? 'không xác định'}</strong>
+          Điểm thẩm định: <strong>{ev.reviewTotal?.toLocaleString('vi-VN') ?? '—'}</strong>. Mức đề
+          xuất theo quy tắc:{' '}
+          <strong>
+            {eligible
+              ? `${bands.find((b) => b.code === eligible)?.label ?? eligible} (${eligible})`
+              : 'không xác định'}
+          </strong>
         </p>
         <FormField id="ap-rating" label="Mức xếp loại phê duyệt" required>
           <Select id="ap-rating" value={finalRating} onChange={(e) => setFinal(e.target.value)}>
@@ -285,17 +292,29 @@ export function EvaluationDetailPage() {
       </div>
 
       {tab === 'sheet' && (
-        <div className="space-y-6" key={`${ev.status}-${ev.revisionNo}`}>
+        // Dựng lại phiếu (nạp lại dữ liệu đã lưu) khi hồ sơ sang giai đoạn mới. "Đã nộp" → "Đang thẩm định"
+        // xảy ra ngay lần lưu đầu của người thẩm định: coi là cùng giai đoạn để không mất kết quả tính thử.
+        <div
+          className="space-y-6"
+          key={`${ev.status === 'SUBMITTED' ? 'UNDER_REVIEW' : ev.status}-${ev.revisionNo}`}
+        >
           {ev.status === 'APPROVED' && (
             <ProvisionalNotice>
               Hồ sơ đã phê duyệt và bị khóa. Muốn điều chỉnh phải được người có thẩm quyền mở lại
               (ghi rõ lý do).
             </ProvisionalNotice>
           )}
+          {ev.can.assignTasks && <AssignTasksCard key={`assign-${ev.version}`} ev={ev} />}
           {reviewLayer ? (
             <ScoreSheet ev={ev} layer="review" editable={ev.can.editReview} />
           ) : (
-            <ScoreSheet ev={ev} layer="self" editable={ev.can.editSelf} />
+            // Người chỉ xem (ví dụ cấp trên vừa giao nhiệm vụ): nạp lại phiếu khi hồ sơ có phiên bản mới
+            <ScoreSheet
+              key={ev.can.editSelf ? 'self' : `self-${ev.version}`}
+              ev={ev}
+              layer="self"
+              editable={ev.can.editSelf}
+            />
           )}
           {reviewLayer && (
             <details>

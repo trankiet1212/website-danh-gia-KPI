@@ -64,7 +64,19 @@ PLANNING → OPEN → SELF_ASSESSMENT → REVIEW → CLOSED. Quý IV có `is_rat
 | Thẩm định, hoàn tất thẩm định, trả lại, phê duyệt | OPEN, SELF_ASSESSMENT, REVIEW                                                     |
 | Mở lại                                            | mọi trạng thái trừ PLANNING (mở lại sau khi đóng kỳ vẫn được — cần quyền + lý do) |
 
-Kỳ PLANNING chỉ để chuẩn bị (tạo hồ sơ, chưa chấm). Vi phạm → `422 BUSINESS_RULE`.
+Kỳ PLANNING chỉ để chuẩn bị (tạo hồ sơ, giao nhiệm vụ, chưa chấm). Vi phạm → `422 BUSINESS_RULE`.
+
+**Kỳ tháng (14/10/2026):** cây kỳ của mỗi năm gồm Năm → 6 tháng → Quý → **Tháng**; ngày bắt đầu/kết thúc theo lịch thực tế (tháng 28/29/30/31 ngày, năm nhuận). Hộp "Tạo hồ sơ cho kỳ" cho chọn năm, kỳ **tháng** hoặc **quý**, hiển thị khoảng ngày và đánh dấu kỳ chứa ngày hiện tại. Hồ sơ tháng chỉ tạo được khi có bộ tiêu chí áp dụng cho loại kỳ "Tháng" (cấu hình ở phiên bản bộ tiêu chí — docs/09 #3).
+
+## 5.6 Giao danh sách nhiệm vụ (14/10/2026)
+
+Cấp trên (quyền `task.assign` + nguyên tắc cấp trên, docs/05) lập danh sách nhiệm vụ/sản phẩm cho cán bộ ngay trên hồ sơ đánh giá:
+
+- Chỉ khi hồ sơ ở **DRAFT** hoặc **RETURNED** và kỳ ở PLANNING, OPEN, SELF_ASSESSMENT. Không đổi trạng thái hồ sơ; ghi lịch sử `assignTasks` và nhật ký `evaluation.assign_tasks`.
+- Mỗi dòng giao gồm: tên nhiệm vụ, mã sản phẩm trong danh mục (tùy chọn), hệ số, số lượng kế hoạch; lưu vào dữ liệu tự đánh giá của mục KPI tổng hợp với cờ `assigned = true`.
+- Cán bộ được đánh giá **không sửa/xóa** được tên, hệ số, số lượng kế hoạch của dòng do cấp trên giao (server giữ nguyên các trường này khi lưu tự đánh giá); cán bộ nhập số lượng hoàn thành, làm lại, chậm, miễn trừ, vượt mức và có thể thêm dòng nhiệm vụ phát sinh của mình.
+- Giao lại danh sách: dòng trùng tên + mã danh mục với dòng đã giao giữ nguyên số liệu cán bộ đã nhập; dòng bị bỏ khỏi danh sách giao sẽ bị xóa; dòng cán bộ tự thêm không bị ảnh hưởng.
+- Lớp thẩm định không đổi: người thẩm định chấm lại toàn bộ các dòng như trước.
 
 ## 5.5 Chuỗi phê duyệt seed (PENDING — cần xác nhận)
 
@@ -103,3 +115,22 @@ stateDiagram-v2
 - Không ai thẩm định/phê duyệt/mở lại hồ sơ của chính mình (403). Phê duyệt chọn mức khác mức đề xuất → bắt buộc lý do.
 - **Điều chỉnh tạm so với §5.1:** chưa ràng buộc trạng thái kỳ khi nộp (chỉ chặn khi kỳ CLOSED); chưa có chuỗi duyệt nhiều bước (`forward`), bước chờ quyết định cấp ngoài, hủy hồ sơ, thông báo — để GĐ6 cùng approval_flows. Kỳ không xếp loại riêng (Quý IV) không tạo được hồ sơ.
 - Bộ quy tắc: DRAFT → PENDING_CONFIRMATION → CONFIRMED → RETIRED; PENDING → DRAFT (trả lại). Bộ tiêu chí: DRAFT → SUBMITTED → APPROVED → RETIRED; SUBMITTED → DRAFT. Danh mục: SUBMITTED → APPROVED. Kỳ: chỉ chuyển sang trạng thái liền kề.
+
+## 5.7 Giao việc và đánh giá hằng ngày (14/10/2026)
+
+Sổ giao việc theo ngày, xem theo tuần (Thứ Hai → Chủ nhật). Cấp trên chọn **ngày bất kỳ** để giao việc cho cấp dưới; cán bộ báo cáo; cấp trên đánh giá từng việc.
+
+```mermaid
+stateDiagram-v2
+  [*] --> ASSIGNED : cấp trên giao (ngày bất kỳ)
+  ASSIGNED --> ASSIGNED : sửa / xóa (chỉ khi chưa báo cáo, chưa đánh giá)
+  ASSIGNED --> REPORTED : cán bộ báo cáo Đã xong / Chưa xong
+  REPORTED --> REPORTED : cán bộ báo cáo lại (khi chưa đánh giá)
+  ASSIGNED --> EVALUATED : cấp trên đánh giá (kể cả khi cán bộ chưa báo cáo)
+  REPORTED --> EVALUATED : cấp trên đánh giá
+  EVALUATED --> EVALUATED : cấp trên sửa đánh giá (nhật ký giữ giá trị cũ)
+```
+
+- Trạng thái suy ra từ dữ liệu (`report_status`, `result`), không lưu cột riêng.
+- **Đánh giá không quy ra điểm:** kết quả (hoàn thành / chưa hoàn thành), chất lượng (đạt yêu cầu / phải làm lại), tiến độ (đúng hạn / chậm) và nhận xét. Các tiêu chí này tương ứng với khái niệm "làm lại", "chậm tiến độ" của [HD05] PL2, nhưng văn bản **không** quy định chấm điểm hay xếp loại theo ngày → hệ thống chỉ tổng hợp số lượng (tuần, tháng) để người đánh giá tham khảo khi chấm hồ sơ tháng/quý (docs/09 #35).
+- Báo cáo bị khóa sau khi cấp trên đã đánh giá.

@@ -149,6 +149,28 @@ enum ObjectiveStatus {
   CANCELLED
 }
 
+/// Báo cáo của cán bộ về việc được giao trong ngày (docs/06 §5.7).
+enum DailyReportStatus {
+  PENDING
+  DONE
+  NOT_DONE
+}
+
+enum DailyTaskResult {
+  COMPLETED
+  NOT_COMPLETED
+}
+
+enum DailyTaskQuality {
+  MEETS
+  REWORK
+}
+
+enum DailyTaskTimeliness {
+  ON_TIME
+  LATE
+}
+
 enum EvaluationStatus {
   DRAFT
   SUBMITTED
@@ -331,6 +353,7 @@ model OrganizationalUnit {
   userRoleUnits UserRoleUnit[]
   objectives    Objective[]
   evaluations   EvaluationRecord[]
+  dailyTasks    DailyTask[]
 
   @@index([parentId])
   @@map("organizational_units")
@@ -371,8 +394,23 @@ model JobPosition {
 
   assignments  EmployeeAssignment[]
   criteriaSets CriteriaSet[]
+  workItems    JobPositionWorkItem[]
 
   @@map("job_positions")
+}
+
+/// Sản phẩm/công việc trong danh mục được phân cho vị trí việc làm (theo MÃ mục — áp dụng mọi phiên bản danh mục).
+model JobPositionWorkItem {
+  jobPositionId String   @map("job_position_id") @db.Uuid
+  itemCode      String   @map("item_code") @db.VarChar(50)
+  createdById   String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  jobPosition JobPosition @relation(fields: [jobPositionId], references: [id], onDelete: Cascade)
+
+  @@id([jobPositionId, itemCode])
+  @@index([itemCode])
+  @@map("job_position_work_items")
 }
 
 /// Hồ sơ cán bộ — chỉ lưu thông tin cần thiết cho nghiệp vụ đánh giá (docs/03 §3.3.B).
@@ -399,6 +437,7 @@ model Employee {
   assignments        EmployeeAssignment[] @relation("AssignmentEmployee")
   managedAssignments EmployeeAssignment[] @relation("AssignmentManager")
   supervisions       UnitSupervision[]
+  dailyTasks         DailyTask[]
 
   @@index([fullName])
   @@map("employees")
@@ -737,6 +776,37 @@ model KeyResultCheckin {
 
   @@index([keyResultId, checkedAt])
   @@map("key_result_checkins")
+}
+
+/// Sổ giao việc hằng ngày (docs/03, docs/06 §5.7) — chỉ theo dõi, không quy đổi thành điểm.
+/// CHECK nhất quán dữ liệu đánh giá nằm trong migration SQL.
+model DailyTask {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  employeeId   String               @map("employee_id") @db.Uuid
+  unitId       String               @map("unit_id") @db.Uuid
+  workDate     DateTime             @map("work_date") @db.Date
+  title        String               @db.VarChar(500)
+  description  String?
+  reportStatus DailyReportStatus    @default(PENDING) @map("report_status")
+  reportNote   String?              @map("report_note")
+  reportedAt   DateTime?            @map("reported_at") @db.Timestamptz(6)
+  result       DailyTaskResult?
+  quality      DailyTaskQuality?
+  timeliness   DailyTaskTimeliness?
+  evalComment  String?              @map("eval_comment")
+  evaluatedBy  String?              @map("evaluated_by") @db.Uuid
+  evaluatedAt  DateTime?            @map("evaluated_at") @db.Timestamptz(6)
+  assignedBy   String               @map("assigned_by") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version      Int                  @default(1)
+
+  employee Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  unit     OrganizationalUnit @relation(fields: [unitId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, workDate])
+  @@index([unitId, workDate])
+  @@map("daily_tasks")
 }
 
 // ---------------------------------------------------------------------

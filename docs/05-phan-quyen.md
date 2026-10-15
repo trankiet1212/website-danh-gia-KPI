@@ -66,16 +66,56 @@
 - `OWN_UNIT`, `MANAGED`, `SELF` yêu cầu tài khoản gắn hồ sơ cán bộ; không gắn → không mở dữ liệu nào.
 - Quyền mặc định của từng vai trò: `packages/shared/src/permissions.ts`; test đảm bảo chỉ Lãnh đạo cơ quan có `evaluation.approve`, `evaluation.reopen`, `ruleset.confirm` và Quản trị hệ thống không có quyền đọc dữ liệu nghiệp vụ.
 
+## Đánh giá theo cấp quản lý (14/10/2026 — theo yêu cầu người dùng, chờ cơ quan xác nhận, docs/09 #34)
+
+**Nguyên tắc "cấp trên đánh giá cấp dưới":** người thực hiện các thao tác đánh giá trên hồ sơ của một cán bộ phải thỏa **cả hai** điều kiện:
+
+1. Cán bộ được đánh giá nằm trong **phạm vi** của quyền tương ứng (ALL / UNITS / OWN_UNIT / MANAGED như §4.1);
+2. Người thực hiện có **cấp chức vụ cao hơn** cán bộ được đánh giá — so theo `positions.level` của phân công chính đang hiệu lực (1 = Trưởng ban, 2 = Phó Trưởng ban, 3 = Trưởng phòng/Chánh VP, 4 = Phó phòng/Phó CVP, 5 = chuyên viên, nhân viên). Tài khoản không gắn hồ sơ cán bộ, hoặc cán bộ chưa có phân công, không được đánh giá ai.
+
+| Thao tác                                               | Quyền                                     | Ai thực hiện được (với tài khoản DEMO)                                                                                   |
+| ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Tạo hồ sơ cho cấp dưới                                 | `evaluation.review`                       | Trưởng ban (mọi cán bộ); PTB (TP, PP, CV các phòng phụ trách); TP/CVP (PP, CV trong phòng); PP/PCVP (cấp dưới trực tiếp) |
+| Giao danh sách nhiệm vụ (`PUT /evaluations/:id/tasks`) | `task.assign`                             | như trên                                                                                                                 |
+| Thẩm định (chấm lại), hoàn tất thẩm định, trả lại      | `evaluation.review`                       | như trên                                                                                                                 |
+| Phê duyệt, mở lại                                      | `evaluation.approve`, `evaluation.reopen` | Trưởng ban; PTB (với cán bộ các phòng phụ trách)                                                                         |
+
+Hệ quả: Phó Trưởng ban do Trưởng ban đánh giá; Trưởng phòng do PTB phụ trách hoặc Trưởng ban đánh giá; Phó phòng do Trưởng phòng, PTB, Trưởng ban; chuyên viên do Phó phòng quản lý trực tiếp, Trưởng phòng, PTB, Trưởng ban. Người **cùng cấp** không đánh giá nhau (ví dụ PTB thường trực không thẩm định hồ sơ PTB khác). Hồ sơ của Trưởng ban không có người thẩm định trong hệ thống (thuộc diện cấp trên quyết định — §5.5).
+
+- Tạo hồ sơ: người có `period.manage` nhưng **không** có `evaluation.review` (Cán bộ tổng hợp) vẫn tạo hồ sơ cho mọi cán bộ trong phạm vi như trước. Lãnh đạo tạo được hồ sơ cho **cấp dưới và chính mình** (để tự đánh giá).
+- Quyền xem (`evaluation.read`), tự đánh giá (`evaluation.self`) không đổi.
+
 ## Thông tin cá nhân và vòng đời tài khoản (12/10/2026)
 
 **Nguồn dữ liệu duy nhất:** thông tin cá nhân nằm ở hồ sơ cán bộ (`employees`); tài khoản (`users`) chỉ liên kết tới hồ sơ. Trang "Tài khoản của tôi" đọc trực tiếp từ hồ sơ nên mọi thay đổi (do cán bộ tự sửa hoặc do cán bộ tổng hợp sửa) hiển thị ngay, mỗi thay đổi đều ghi nhật ký kiểm toán.
 
 | Nhóm thông tin                      | Trường                                                  | Cán bộ tự sửa (`PATCH /profile`) | Cán bộ tổng hợp (`employee.write`)       |
-| ----------------------------------- | ------------------------------------------------------- | ------------------------------------- | ---------------------------------------- |
-| Liên hệ                             | Số điện thoại, email                                    | ✔                                     | ✔                                        |
-| Lý lịch                             | Họ tên, giới tính, ngày sinh                            | —                                     | ✔                                        |
-| Chức vụ Đảng, chính quyền, đoàn thể | `party_position`, `gov_position`, `union_position`      | —                                     | ✔                                        |
-| Công tác                            | Mã cán bộ, đơn vị, chức vụ, VTVL, cấp quản lý trực tiếp | —                                     | ✔ (qua điều chuyển, có lịch sử)          |
-| Tài khoản                           | Tên đăng nhập, trạng thái, vai trò, phạm vi             | —                                     | — (chỉ Quản trị hệ thống, `user.manage`) |
+| ----------------------------------- | ------------------------------------------------------- | -------------------------------- | ---------------------------------------- |
+| Liên hệ                             | Số điện thoại, email                                    | ✔                                | ✔                                        |
+| Lý lịch                             | Họ tên, giới tính, ngày sinh                            | —                                | ✔                                        |
+| Chức vụ Đảng, chính quyền, đoàn thể | `party_position`, `gov_position`, `union_position`      | —                                | ✔                                        |
+| Công tác                            | Mã cán bộ, đơn vị, chức vụ, VTVL, cấp quản lý trực tiếp | —                                | ✔ (qua điều chuyển, có lịch sử)          |
+| Tài khoản                           | Tên đăng nhập, trạng thái, vai trò, phạm vi             | —                                | — (chỉ Quản trị hệ thống, `user.manage`) |
 
 **Nghỉ việc / chuyển công tác:** thao tác "Kết thúc công tác" (`POST /employees/:id/end-employment`) trong **một giao dịch**: đổi trạng thái hồ sơ, đóng phân công, **vô hiệu hóa tài khoản liên kết (`DISABLED`) và thu hồi mọi phiên đăng nhập**, ghi nhật ký. Tài khoản và hồ sơ **không bị xóa vật lý** (giữ lịch sử đánh giá, nhật ký). Không được mở khóa (`unlock`) hoặc tạo mới tài khoản gắn với hồ sơ không còn công tác.
+
+## Giao việc hằng ngày (14/10/2026)
+
+Dùng các mã quyền sẵn có, áp dụng nguyên tắc "cấp trên" như hồ sơ đánh giá (mục trên):
+
+| Thao tác            | Quyền                 | Điều kiện                                                                        |
+| ------------------- | --------------------- | -------------------------------------------------------------------------------- |
+| Xem công việc       | `task.read`           | Phạm vi cán bộ (cán bộ thấy việc của mình; lãnh đạo thấy cấp dưới trong phạm vi) |
+| Giao, sửa, xóa việc | `task.assign`         | Cấp trên (chức vụ cao hơn) + trong phạm vi; không tự giao cho mình               |
+| Báo cáo kết quả     | `task.update`         | Chỉ chính cán bộ được giao                                                       |
+| Đánh giá            | `task.quality.record` | Cấp trên + trong phạm vi; không tự đánh giá                                      |
+
+Trưởng ban, PTB, Trưởng phòng/Chánh VP, Phó phòng/Phó CVP có `task.assign`, `task.quality.record` theo vai trò mặc định; cán bộ có `task.update`.
+
+## Danh mục theo vị trí việc làm (15/10/2026 — theo yêu cầu người dùng)
+
+- Quyền mới **`catalog.assign`** — "Phân danh mục sản phẩm/công việc theo vị trí việc làm": mặc định chỉ **Cán bộ phụ trách đánh giá / tổng hợp** (EVAL_OFFICER).
+- Mỗi người **chỉ xem các sản phẩm/công việc được phân cho VTVL của mình** (kể cả Trưởng ban, lãnh đạo phòng). Người không có VTVL không thấy mục nào.
+- Xem **toàn bộ** danh mục: người có `catalog.assign`; người có `catalog.approve` chỉ khi phiên bản danh mục đang chờ phê duyệt (cần xem đủ để duyệt).
+- Phiếu chấm điểm, giao nhiệm vụ trên hồ sơ: ô chọn sản phẩm hiển thị danh mục theo VTVL của **cán bộ được đánh giá** (không phải của người chấm).
+- Kiểm tra ở backend; giao diện chỉ ẩn/hiện.
